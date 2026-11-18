@@ -23,11 +23,11 @@
 | Membre | GitHub | Autorisation constatée | Action |
 | --- | --- | --- | --- |
 | Gémima | [@GemimaOndele](https://github.com/GemimaOndele) | Administration | Coordination du dépôt et du tableau |
-| Aminata | [@yayeaminata12](https://github.com/yayeaminata12) | Lecture | Vérifier/inviter comme collaboratrice avec Write ; l'assignation de #3 n'a pas été enregistrée |
+| Aminata | [@yayeaminata12](https://github.com/yayeaminata12) | Écriture | Assignée à #2, #3, #6, #7, #8, #11 et #12 |
 | Elias | [@eliascre](https://github.com/eliascre) | Écriture | Assignations GitHub confirmées sur #2, #4, #5 et #11 |
-| Omar | [@omk181920](https://github.com/omk181920) | Lecture | Vérifier/inviter comme collaborateur avec Write ; attribution #9/#10 seulement après acceptation, sans le rendre bloquant |
+| Omar | [@omk181920](https://github.com/omk181920) | Écriture | Assigné à #9, #10 et #12 ; reste temporairement indisponible, sans blocage du chemin critique |
 
-Les Issues #6 et #7 sont assignées temporairement à Gémima comme relais ; Aminata reste la **pilote fonctionnelle** prévue. Les Issues #9 et #10 sont assignées à Gémima pour assurer la continuité, Omar devant prendre des tâches à son retour. Les droits du dépôt et ceux du **GitHub Project privé** sont distincts : après l'invitation au dépôt, ajouter les membres au Project pour qu'ils puissent modifier le tableau.
+Les Issues #6 et #7 sont attribuées à Aminata et Gémima en binôme. Les Issues #9 et #10 sont attribuées à Omar et Gémima, avec Gémima en relais le temps qu'Omar termine son TP. Les Issues #2 et #11 sont attribuées aux trois membres actifs ; #12 est attribuée aux quatre membres. Les droits du dépôt et ceux du **GitHub Project privé** sont distincts : vérifier l'accès de chacun au tableau pour qu'il puisse le modifier.
 
 **Règle :** aucune tâche essentielle au démarrage, à l'intégration ou à la soutenance ne doit dépendre exclusivement d'Omar. Gémima et Aminata assurent un relais minimal sur le dashboard et l'observabilité si nécessaire.
 
@@ -113,6 +113,6 @@ Le projet est **privé** sur la capture d'écran : inviter les autres membres da
 - [ ] Créer et régler la vue `Roadmap`.
 - [ ] Renseigner les priorités et échéances dans les **champs natifs** de Projects (table de la section 4).
 - [ ] Relier les dépendances natives entre les Issues pertinentes.
-- [ ] Inviter les membres et les assigner avec leurs usernames GitHub vérifiés.
+- [x] Membres invités au dépôt et assignations GitHub effectuées sur les 12 Issues avec les usernames vérifiés.
 - [ ] Vérifier le partage du tableau Projects privé et du dépôt public.
 - [ ] Réviser le plan et commencer les tâches en parallèle.
