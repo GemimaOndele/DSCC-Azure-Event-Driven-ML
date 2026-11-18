@@ -18,6 +18,17 @@
 | Elias CREMNITER | Données, entraînement, métriques, FastAPI, Docker et tests | R1 | Active |
 | Omar KRARTI | Dashboard, requêtes KQL, vérification des preuves et documentation à son retour | R4 | Temporairement indisponible (termine un TP) |
 
+## 1.1 Comptes GitHub et assignations vérifiées (18 novembre 2026)
+
+| Membre | GitHub | Autorisation constatée | Action |
+| --- | --- | --- | --- |
+| Gémima | [@GemimaOndele](https://github.com/GemimaOndele) | Administration | Coordination du dépôt et du tableau |
+| Aminata | [@yayeaminata12](https://github.com/yayeaminata12) | Lecture | Vérifier/inviter comme collaboratrice avec Write ; l'assignation de #3 n'a pas été enregistrée |
+| Elias | [@eliascre](https://github.com/eliascre) | Écriture | Assignations GitHub confirmées sur #2, #4, #5 et #11 |
+| Omar | [@omk181920](https://github.com/omk181920) | Lecture | Vérifier/inviter comme collaborateur avec Write ; attribution #9/#10 seulement après acceptation, sans le rendre bloquant |
+
+Les Issues #6 et #7 sont assignées temporairement à Gémima comme relais ; Aminata reste la **pilote fonctionnelle** prévue. Les Issues #9 et #10 sont assignées à Gémima pour assurer la continuité, Omar devant prendre des tâches à son retour. Les droits du dépôt et ceux du **GitHub Project privé** sont distincts : après l'invitation au dépôt, ajouter les membres au Project pour qu'ils puissent modifier le tableau.
+
 **Règle :** aucune tâche essentielle au démarrage, à l'intégration ou à la soutenance ne doit dépendre exclusivement d'Omar. Gémima et Aminata assurent un relais minimal sur le dashboard et l'observabilité si nécessaire.
 
 **Azure :** Gémima et Aminata disposent des crédits les plus élevés. Choisir **un seul abonnement d'intégration** après vérification des crédits, restrictions régionales et quotas. Le propriétaire crée les rôles et ressources ; les autres peuvent collaborer par accès RBAC si autorisé ou en développant localement et en déployant via GitHub Actions/OIDC.
