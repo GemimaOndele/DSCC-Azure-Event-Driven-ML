@@ -49,18 +49,18 @@ Les dépendances natives **Blocked by / Blocking** peuvent relier les Issues. Le
 
 | Issue | Lot | Pilote fonctionnel | Priority | Date cible | Dépendances / conditions |
 | --- | --- | --- | --- | --- | --- |
-| [#1](../issues/1) | GitHub Projects, accès, règles | Gémima | P0 | 19 nov. | Aucune |
-| [#2](../issues/2) | Contrat CSV, Queue, /predict, Cosmos | Gémima + validation Aminata et Elias | P0 | 19 nov. | Aucune |
-| [#3](../issues/3) | Guide de partage Azure RBAC/OIDC | Aminata (+ Gémima) | P0 | 20 nov. | Aucune ; documentation d'abord |
-| [#4](../issues/4) | Modèle Telecom Churn | Elias | P0 | 22 nov. | Validation de #2 pour le format d'inférence |
-| [#5](../issues/5) | API, tests, Docker, GHCR | Elias | P0 | 24 nov. | #4 pour l'API finale ; squelette possible avant |
-| [#6](../issues/6) | Functions dispatcher/worker/recent en local | Aminata + Gémima | P0 | 26 nov. | #2 ; pas d'Azure nécessaire pour les tests locaux |
-| [#7](../issues/7) | Budget, régions, infra Azure | Aminata + Gémima | P0 | 26 nov. | #3, choix du compte, restrictions/quotas validés |
-| [#8](../issues/8) | CI/CD & OIDC | Gémima (+ Aminata) | P0 | 28 nov. | Tests de #5 pour CI ; #7 pour déploiement CD |
-| [#9](../issues/9) | Dashboard / persistance | Gémima au départ, Omar ensuite si disponible | P1 | 29 nov. | #2 pour maquette ; #6 et #7 pour données réelles |
-| [#10](../issues/10) | Observabilité, KQL, alertes | Gémima/Aminata, puis Omar si disponible | P0 | 29 nov. | #7 et premières traces de #5/#6 |
-| [#11](../issues/11) | Tests E2E et captures | Équipe active | P0 | 30 nov. | #5–#10 selon scénario ; tester tôt par morceau |
-| [#12](../issues/12) | Rapport, coûts, soutenance, nettoyage | Toute l'équipe, Gémima coordonne | P0 | 1er déc. rapport ; 2 déc. soutenance ; nettoyage ensuite | Documentation tout au long du développement |
+| [#1](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/issues/1) | GitHub Projects, accès, règles | Gémima | P0 | 19 nov. | Aucune |
+| [#2](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/issues/2) | Contrat CSV, Queue, /predict, Cosmos | Gémima + validation Aminata et Elias | P0 | 19 nov. | Aucune |
+| [#3](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/issues/3) | Guide de partage Azure RBAC/OIDC | Aminata (+ Gémima) | P0 | 20 nov. | Aucune ; documentation d'abord |
+| [#4](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/issues/4) | Modèle Telecom Churn | Elias | P0 | 22 nov. | Validation de #2 pour le format d'inférence |
+| [#5](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/issues/5) | API, tests, Docker, GHCR | Elias | P0 | 24 nov. | #4 pour l'API finale ; squelette possible avant |
+| [#6](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/issues/6) | Functions dispatcher/worker/recent en local | Aminata + Gémima | P0 | 26 nov. | #2 ; pas d'Azure nécessaire pour les tests locaux |
+| [#7](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/issues/7) | Budget, régions, infra Azure | Aminata + Gémima | P0 | 26 nov. | #3, choix du compte, restrictions/quotas validés |
+| [#8](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/issues/8) | CI/CD & OIDC | Gémima (+ Aminata) | P0 | 28 nov. | Tests de #5 pour CI ; #7 pour déploiement CD |
+| [#9](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/issues/9) | Dashboard / persistance | Gémima au départ, Omar ensuite si disponible | P1 | 29 nov. | #2 pour maquette ; #6 et #7 pour données réelles |
+| [#10](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/issues/10) | Observabilité, KQL, alertes | Gémima/Aminata, puis Omar si disponible | P0 | 29 nov. | #7 et premières traces de #5/#6 |
+| [#11](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/issues/11) | Tests E2E et captures | Équipe active | P0 | 30 nov. | #5–#10 selon scénario ; tester tôt par morceau |
+| [#12](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/issues/12) | Rapport, coûts, soutenance, nettoyage | Toute l'équipe, Gémima coordonne | P0 | 1er déc. rapport ; 2 déc. soutenance ; nettoyage ensuite | Documentation tout au long du développement |
 
 Les dates correspondent à une **planification interne proposée**. Le QCM du 24 novembre doit être pris en compte dans la charge de travail. Le rendu est un rapport PDF avec captures et documentation ; la **vidéo est optionnelle** selon l'enseignante.
 
