@@ -48,6 +48,8 @@ Cross-cutting: Application Insights and OpenTelemetry, KQL and alerting, GitHub 
 
 ## Current project organization
 
+- [Start here — team branch assignments](docs/TEAM-START-HERE.md) — first missions, branches and Git commands for all four students.
+
 - [GitHub Project board](https://github.com/users/GemimaOndele/projects/5) — status, assignments, priorities and due dates.
 - [Issue backlog](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/issues) — 12 top-level technical and delivery tasks.
 - [Team roadmap and dependency plan](docs/project-board-configuration.md).
