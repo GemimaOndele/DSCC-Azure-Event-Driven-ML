@@ -1,0 +1,95 @@
+{
+  "_comment": "Donnees fictives pour le mode simule (?mock=1). Meme schema que GET /api/recent (functions/src/service.py).",
+  "count": 8,
+  "limit": 20,
+  "results": [
+    {
+      "id": "batch_08-sample0000000007",
+      "fileName": "batch_08.csv",
+      "timestamp": "2026-11-24T10:59:00Z",
+      "rows": 150,
+      "atRisk": 38,
+      "avgChurnProbability": 0.3,
+      "modelVersion": "1.0.0",
+      "durationMs": 2440,
+      "status": "ok"
+    },
+    {
+      "id": "batch_07-sample0000000006",
+      "fileName": "batch_07.csv",
+      "timestamp": "2026-11-24T10:42:00Z",
+      "rows": 18,
+      "atRisk": 4,
+      "avgChurnProbability": 0.27,
+      "modelVersion": "1.0.0",
+      "durationMs": 980,
+      "status": "ok"
+    },
+    {
+      "id": "batch_06-sample0000000005",
+      "fileName": "batch_06.csv",
+      "timestamp": "2026-11-24T10:25:00Z",
+      "rows": 64,
+      "atRisk": 22,
+      "avgChurnProbability": 0.36,
+      "modelVersion": "1.0.0",
+      "durationMs": 1510,
+      "status": "ok"
+    },
+    {
+      "id": "batch_05-sample0000000004",
+      "fileName": "batch_05.csv",
+      "timestamp": "2026-11-24T10:08:00Z",
+      "rows": 200,
+      "atRisk": 41,
+      "avgChurnProbability": 0.24,
+      "modelVersion": "1.0.0",
+      "durationMs": 2980,
+      "status": "ok"
+    },
+    {
+      "id": "batch_04-sample0000000003",
+      "fileName": "batch_04.csv",
+      "timestamp": "2026-11-24T09:51:00Z",
+      "rows": 80,
+      "atRisk": 19,
+      "avgChurnProbability": 0.29,
+      "modelVersion": "1.0.0",
+      "durationMs": 1650,
+      "status": "ok"
+    },
+    {
+      "id": "batch_03-sample0000000002",
+      "fileName": "batch_03.csv",
+      "timestamp": "2026-11-24T09:34:00Z",
+      "rows": 35,
+      "atRisk": 12,
+      "avgChurnProbability": 0.38,
+      "modelVersion": "1.0.0",
+      "durationMs": 1320,
+      "status": "ok"
+    },
+    {
+      "id": "batch_02-sample0000000001",
+      "fileName": "batch_02.csv",
+      "timestamp": "2026-11-24T09:17:00Z",
+      "rows": 120,
+      "atRisk": 27,
+      "avgChurnProbability": 0.26,
+      "modelVersion": "1.0.0",
+      "durationMs": 2210,
+      "status": "ok"
+    },
+    {
+      "id": "batch_01-sample0000000000",
+      "fileName": "batch_01.csv",
+      "timestamp": "2026-11-24T09:00:00Z",
+      "rows": 50,
+      "atRisk": 13,
+      "avgChurnProbability": 0.31,
+      "modelVersion": "1.0.0",
+      "durationMs": 1840,
+      "status": "ok"
+    }
+  ]
+}
