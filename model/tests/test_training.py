@@ -17,6 +17,7 @@ ONNX_PATH = MODEL_DIR / "model-1.0.0.onnx"
 EXPECTED_ONNX_GIT_SHA = "2fc9e022b7029f293bdc3a471f68a91f4d7e57ec"
 
 sys.path.insert(0, str(MODEL_DIR))
+import prepare_data  # noqa: E402
 from prepare_data import (  # noqa: E402
     EXPECTED_COLUMNS,
     PREPARED_PATH,
@@ -138,3 +139,40 @@ def test_training_reproduces_committed_metrics(retrained: Path, tmp_path: Path) 
         (retrained / "model" / "test_split.csv").read_bytes()
         == (second / "model" / "test_split.csv").read_bytes()
     )
+
+
+def test_no_dataset_is_versioned() -> None:
+    """The case workbook and the held-out split must never enter the repository."""
+    tracked = subprocess.check_output(["git", "ls-files"], cwd=ROOT, text=True).splitlines()
+
+    assert "Customer_Churn_Dataset.xlsx" not in tracked
+    assert "model/test_split.csv" not in tracked
+    assert not [name for name in tracked if name.startswith("data/")]
+
+
+def test_clean_environment_fetches_and_prepares_pinned_source(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A fresh checkout needs no local workbook: it downloads, hashes, prepares."""
+    raw = tmp_path / "data" / "raw" / "02-Churn-Dataset.xlsx"
+    prepared = tmp_path / "data" / "processed" / "churn_dataset.csv"
+    monkeypatch.setattr(prepare_data, "RAW_PATH", raw)
+    monkeypatch.setattr(prepare_data, "PREPARED_PATH", prepared)
+
+    assert not raw.exists() and not prepared.exists()
+    assert prepare_data.ensure_dataset() == prepared
+    assert prepare_data._sha256(raw) == SOURCE_SHA256
+    assert pd.read_csv(prepared).shape == (7043, 23)
+
+
+def test_tampered_download_is_rejected(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A checksum mismatch deletes the file instead of preparing a dataset."""
+    bogus = tmp_path / "bogus.xlsx"
+    bogus.write_bytes(b"not the pinned case workbook")
+    raw = tmp_path / "data" / "raw" / "bogus.xlsx"
+    monkeypatch.setattr(prepare_data, "RAW_PATH", raw)
+    monkeypatch.setattr(prepare_data, "SOURCE_URL", bogus.as_uri())
+
+    with pytest.raises(RuntimeError, match="checksum mismatch"):
+        prepare_data.download_source()
+    assert not raw.exists()

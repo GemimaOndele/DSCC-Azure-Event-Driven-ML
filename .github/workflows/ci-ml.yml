@@ -1,8 +1,9 @@
 name: CI - ML API and training
 
 # Checks requested by the 24/11/2026 audits on PR #17 and PR #18.
-# The file is identical on feat/ml-api and feat/ml-training so the two merges
-# do not produce a workflow conflict; each job runs only for its own PR.
+# Kept identical on feat/ml-api and feat/ml-training until the 24/11/2026
+# provenance review; only the training job gained explicit clean-room steps.
+# The api job is unchanged and each job runs only for its own PR.
 
 on:
   push:
@@ -43,5 +44,12 @@ jobs:
           cache-dependency-path: model/requirements.txt
       - name: Install training dependencies
         run: python -m pip install -r model/requirements.txt pytest==8.3.4
+      - name: Assert clean checkout (no dataset is versioned or pre-existing)
+        run: |
+          test -z "$(git ls-files -- 'data/*' 'Customer_Churn_Dataset.xlsx' 'model/test_split.csv')"
+          test ! -e data/raw/02-Churn-Dataset.xlsx
+          test ! -e data/processed/churn_dataset.csv
+      - name: Download, verify SHA-256 and prepare dataset
+        run: python model/prepare_data.py
       - name: Run training and reproducibility tests
         run: python -m pytest model/tests -q
