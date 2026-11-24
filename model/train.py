@@ -26,18 +26,35 @@ OUTPUT_DIR = ROOT / "model"
 MODEL_PATH = OUTPUT_DIR / f"model-{MODEL_VERSION}.joblib"
 ONNX_MODEL_PATH = OUTPUT_DIR / f"model-{MODEL_VERSION}.onnx"
 METRICS_PATH = OUTPUT_DIR / "metrics.json"
+FEATURES_PATH = OUTPUT_DIR / "features.json"
+TEST_SPLIT_PATH = OUTPUT_DIR / "test_split.csv"
+IDENTIFIER = "customerID"
+TARGET = "Churn"
 
 
 def main() -> None:
+    features_contract = json.loads(FEATURES_PATH.read_text(encoding="utf-8"))
+    expected_features = [feature["name"] for feature in features_contract["features"]]
+    if features_contract["model_version"] != MODEL_VERSION:
+        raise ValueError("The feature contract targets a different model version.")
+    if features_contract["feature_count"] != len(expected_features):
+        raise ValueError("The feature contract is internally inconsistent.")
+
     data = pd.read_excel(DATASET, sheet_name="01 Churn-Dataset")
-    data = data.drop(columns=["customerID"])
+    customer_ids = data[IDENTIFIER].copy()
+    data = data.drop(columns=[IDENTIFIER])
     data["TotalCharges"] = pd.to_numeric(data["TotalCharges"], errors="coerce")
 
-    X = data.drop(columns=["Churn"])
-    y = data["Churn"].map({"No": 0, "Yes": 1})
+    X = data.drop(columns=[TARGET])
+    y = data[TARGET].map({"No": 0, "Yes": 1})
 
     if y.isna().any():
         raise ValueError("The Churn column contains values outside 'Yes'/'No'.")
+    if X.columns.tolist() != expected_features:
+        raise ValueError(
+            "Dataset features do not match model/features.json: "
+            f"{X.columns.tolist()} != {expected_features}"
+        )
 
     X_train, X_test, y_train, y_test = train_test_split(
         X,
@@ -46,6 +63,12 @@ def main() -> None:
         random_state=RANDOM_SEED,
         stratify=y,
     )
+
+    # Held-out split kept as evidence for the report. customerID and Churn are
+    # reattached for reading only; neither is used by the model.
+    test_split = X_test.copy()
+    test_split.insert(0, IDENTIFIER, customer_ids.loc[X_test.index].to_numpy())
+    test_split[TARGET] = y_test.map({0: "No", 1: "Yes"}).to_numpy()
 
     numeric_columns = X.select_dtypes(include=["number"]).columns.tolist()
     categorical_columns = X.select_dtypes(exclude=["number"]).columns.tolist()
@@ -110,6 +133,8 @@ def main() -> None:
         "model_version": MODEL_VERSION,
         "random_seed": RANDOM_SEED,
         "test_size": len(X_test),
+        "decision_threshold": features_contract["decision_threshold"],
+        "features": expected_features,
         "model": {
             "auc": float(roc_auc_score(y_test, probabilities)),
             "f1": float(f1_score(y_test, predicted)),
@@ -131,6 +156,7 @@ def main() -> None:
     }
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    test_split.to_csv(TEST_SPLIT_PATH, index=False)
     joblib.dump(model, MODEL_PATH)
     ONNX_MODEL_PATH.write_bytes(onnx_model.SerializeToString())
 
