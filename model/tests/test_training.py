@@ -97,5 +97,15 @@ def test_training_reproduces_committed_metrics(tmp_path: Path) -> None:
         text=True,
     )
     assert result.returncode == 0, result.stderr
-    assert (isolated / "model" / "metrics.json").read_bytes() == METRICS_PATH.read_bytes()
+
+    committed = json.loads(METRICS_PATH.read_text(encoding="utf-8"))
+    regenerated = json.loads(
+        (isolated / "model" / "metrics.json").read_text(encoding="utf-8")
+    )
+    # ONNXRuntime reports this error at machine precision: it can differ in its
+    # last digits between Windows and Linux. Every other value is exact.
+    committed_error = committed.pop("onnx_max_probability_error")
+    regenerated_error = regenerated.pop("onnx_max_probability_error")
+    assert abs(committed_error - regenerated_error) < 1e-5
+    assert regenerated == committed
     assert (isolated / "model" / "test_split.csv").read_bytes() == TEST_SPLIT_PATH.read_bytes()

@@ -46,7 +46,7 @@ Matrice de confusion sur 1 409 lignes : `[[847, 188], [49, 325]]`. Écart maxima
 
 ## 5. Reproductibilité et preuves
 
-- `py -3.12 -m pytest model/tests -q` exécute 5 tests : conformité du dataset aux 21 features, valeurs de référence des métriques, validité ONNX + **empreinte Git partagée `2fc9e022b7029f293bdc3a471f68a91f4d7e57ec`**, jeu de test, et **ré-entraînement complet dans un dossier temporaire** avec comparaison octet pour octet de `metrics.json` et `test_split.csv`.
+- `py -3.12 -m pytest model/tests -q` exécute 5 tests : conformité du dataset aux 21 features, valeurs de référence des métriques, validité ONNX + **empreinte Git partagée `2fc9e022b7029f293bdc3a471f68a91f4d7e57ec`**, jeu de test, et **ré-entraînement complet dans un dossier temporaire** avec comparaison exacte de toutes les valeurs de `metrics.json` (sauf l'écart ONNX flottant, toléré à `1e-5` car ses derniers chiffres dépendent de la plateforme) et comparaison octet pour octet de `test_split.csv`.
 - Exécution locale du 24/11/2026 : **5 passed**. CI : workflow `.github/workflows/ci-ml.yml`, job `training-tests`, sur la PR #18 (Python 3.12 + dépendances figées).
 - Le blob ONNX commité n'a pas été réécrit : l'export régénéré a la même structure et les mêmes probabilités, mais un ordre de sérialisation des attributs différent (SHA Git `d130e3be…` en local). C'est pourquoi l'artefact partagé avec la PR #17 est conservé tel quel.
 - Jeu de test pour le rapport : **`model/test_split.csv`** (1 409 lignes, `customerID` et `Churn` réattachés pour la lecture, 374 churners). Il s'agit exactement du split utilisé pour les métriques ci-dessus.
