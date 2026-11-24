@@ -10,7 +10,7 @@
 
 Build an event-driven Telecom Customer Churn prediction pipeline on Microsoft Azure, with file validation, queue-based decoupling, a containerized Machine Learning inference API, persisted results, a dashboard, observability, CI/CD, managed identities and a budget cap.
 
-**Status:** Project setup in progress. The model, API, Functions and Azure deployment are **not yet implemented**. This README describes the *target* architecture.
+**Status (24 Nov 2026):** GitHub Projects is configured; training and FastAPI code have been submitted in **PR #18 and PR #17** but are **not yet merged**. The Azure Functions pipeline and cloud deployment have not been verified. This section describes the *target* architecture; do not confuse proposed components with deployed services.
 
 ## Target architecture
 
@@ -25,7 +25,7 @@ Client CSV → Blob Storage (input/)
                               ↓
                        Azure Function worker
                               ↓ POST /predict
-                    FastAPI + scikit-learn
+                    FastAPI + ONNX Runtime (proposed model)
                     Azure Container Apps
                               ↓
                 output/ Blob + Cosmos DB
@@ -84,4 +84,4 @@ Public repository, README and reproducible code, a PDF report **with screenshots
 
 ML/API (4), event-driven pipeline (4), persistence/dashboard (2), observability (3), CI/CD/security (3), cost/student restrictions (2), documentation/demo/defense (2) = **20 points** (plus optional bonuses only after core completion).
 
-_Last planning update: 18 November 2026._
+_Last planning update: 24 November 2026. Open implementation PRs: [model #18](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/pull/18), [API #17](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/pull/17). The model currently uses 21 input features and the API serves single-customer requests; the cross-component contract is awaiting team review._
