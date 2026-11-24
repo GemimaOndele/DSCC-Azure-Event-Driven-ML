@@ -3,11 +3,11 @@
 **Projet :** DSCC — Projet Azure ML | Conseil d'équipe  
 **GitHub Project :** https://github.com/users/GemimaOndele/projects/5  
 **Dépôt :** https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML  
-**Date de cadrage :** 18 novembre 2026  
+**Date de cadrage :** 18 novembre 2026 — **dernière mise à jour : 24 novembre 2026**  
 **Soutenance :** 2 décembre 2026  
 **Sujet validé par les quatre membres :** Telecom Customer Churn — pipeline de ML événementiel sur Azure.
 
-> Ce document prépare la configuration opérationnelle de GitHub Projects. Les dates et responsables ci-dessous sont **proposés** : les champs du tableau Projects ne sont pas modifiés automatiquement par ce fichier. Ne pas confondre une tâche documentée avec une tâche effectuée.
+> **État au 24/11/2026 :** configuration des champs natifs Projects confirmée par captures de la vue Table (12 dates cibles, 12 priorités et 12 Workstreams), six dépendances natives vérifiées par l'API GitHub, accès des collaborateurs validés. Les dates restent des **objectifs internes**, pas une preuve que les tâches techniques sont réalisées.
 
 ## 1. Membres, disponibilité et domaines
 
@@ -16,7 +16,7 @@
 | Gémima ONDELE POUROU | Coordination, GitHub, contrat commun, CI/CD, binôme Azure, rapport | Pilotage, R2/R3/R4 | Active |
 | Yaye Aminata DIAGNE | Documentation d'accès partagé Azure d'abord, puis infrastructure et pipeline avec Gémima | R2/R3 | Active ; ne provisionne pas de ressources Azure pour l'instant |
 | Elias CREMNITER | Données, entraînement, métriques, FastAPI, Docker et tests | R1 | Active |
-| Omar KRARTI | Dashboard, requêtes KQL, vérification des preuves et documentation à son retour | R4 | Temporairement indisponible (termine un TP) |
+| Omar KRARTI | **Pilote actif R4** : dashboard, KQL, métriques, alertes, preuves et tests E2E | R4 | **Disponible depuis le 24/11/2026**, confirmé par Gémima |
 
 ## 1.1 Comptes GitHub et assignations vérifiées (18 novembre 2026)
 
@@ -25,11 +25,11 @@
 | Gémima | [@GemimaOndele](https://github.com/GemimaOndele) | Administration | Coordination du dépôt et du tableau |
 | Aminata | [@yayeaminata12](https://github.com/yayeaminata12) | Écriture | Assignée à #2, #3, #6, #7, #8, #11 et #12 |
 | Elias | [@eliascre](https://github.com/eliascre) | Écriture | Assignations GitHub confirmées sur #2, #4, #5 et #11 |
-| Omar | [@omk181920](https://github.com/omk181920) | Écriture | Assigné à #9, #10 et #12 ; reste temporairement indisponible, sans blocage du chemin critique |
+| Omar | [@omk181920](https://github.com/omk181920) | Écriture | **Pilote #9 et #10** ; contribue aussi à #11 et #12 (assignations vérifiées) |
 
-Les Issues #6 et #7 sont attribuées à Aminata et Gémima en binôme. Les Issues #9 et #10 sont attribuées à Omar et Gémima, avec Gémima en relais le temps qu'Omar termine son TP. Les Issues #2 et #11 sont attribuées aux trois membres actifs ; #12 est attribuée aux quatre membres. Les droits du dépôt et ceux du **GitHub Project privé** sont distincts : vérifier l'accès de chacun au tableau pour qu'il puisse le modifier.
+Les Issues #6 et #7 sont attribuées à Aminata et Gémima en binôme. Les Issues #9 et #10 sont attribuées à **Omar comme pilote R4**, avec Gémima en appui pour les interfaces et l'intégration Azure. **Les Issues #11 et #12 concernent désormais les quatre membres.** L'accès au dépôt et au GitHub Project privé a été confirmé pour les quatre membres le 24 novembre 2026.
 
-**Règle :** aucune tâche essentielle au démarrage, à l'intégration ou à la soutenance ne doit dépendre exclusivement d'Omar. Gémima et Aminata assurent un relais minimal sur le dashboard et l'observabilité si nécessaire.
+**Règle actualisée :** Omar est disponible et pilote désormais le domaine R4. Le dashboard et le plan de mesure peuvent avancer en parallèle du développement R1–R3 ; les validations d'intégration dépendront des composants Cloud et des événements réels.
 
 **Azure :** Gémima et Aminata disposent des crédits les plus élevés. Choisir **un seul abonnement d'intégration** après vérification des crédits, restrictions régionales et quotas. Le propriétaire crée les rôles et ressources ; les autres peuvent collaborer par accès RBAC si autorisé ou en développant localement et en déployant via GitHub Actions/OIDC.
 
@@ -41,20 +41,20 @@ Les Issues #6 et #7 sont attribuées à Aminata et Gémima en binôme. Les Issue
 - **Terminé** : critères de validation remplis, captures/preuves enregistrées.
 - **Bloqué** : impossibilité avérée d'avancer (dépendance technique, accès, quota, décision) ; expliquer le blocage dans l'Issue, le responsable de la résolution et sa prochaine action.
 
-Ne pas placer automatiquement les tâches d'Omar dans « Bloqué » : elles sont **À faire**, avec une solution de relais et un démarrage différé. Un statut facultatif **Prêt à démarrer** peut être ajouté plus tard si le volume de tâches le justifie.
+Ne pas placer automatiquement les tâches d'Omar dans « En cours » : elles restent **À faire** tant que le travail n'a pas effectivement commencé. Le passage en « En cours » se fait sur preuve de démarrage réel.
 
-## 3. Champs Projects à créer
+## 3. Champs Projects — état configuré
 
 | Champ | Type recommandé | Valeurs / utilisation |
 | --- | --- | --- |
 | Priority | Sélection unique | P0 (bloquant / échéance rapprochée), P1 (important), P2 (amélioration) |
-| Target date | Date | Date limite interne, non date imposée par l'enseignante |
+| Date cible | Date | Date limite interne renseignée pour les 12 Issues ; n'est pas une date imposée par l'enseignante |
 | Workstream | Sélection unique | Pilotage, R1 ML/API, R2 Pipeline, R3 Azure/CI-CD, R4 Observabilité & Dashboard, Livraison |
 | Responsable | Champ natif Assignees | Assigner seulement après invitation des comptes GitHub |
 | Evidence | Texte court (facultatif) | Chemin de capture, lien vers preuve ou commentaire d'Issue |
 | Source Excel | Texte court (facultatif) | Numéro d'étape dans les 52 étapes d'Aminata |
 
-Les dépendances natives **Blocked by / Blocking** peuvent relier les Issues. Les références `#N` ci-dessous donnent la structure de départ.
+Les six dépendances natives **Blocked by / Blocking** sont enregistrées et vérifiées : #5 par #4, #6 par #2, #7 par #3, et #11 par #5, #6 et #7.
 
 ## 4. Backlog priorisé et planifié
 
@@ -68,9 +68,9 @@ Les dépendances natives **Blocked by / Blocking** peuvent relier les Issues. Le
 | [#6](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/issues/6) | Functions dispatcher/worker/recent en local | Aminata + Gémima | P0 | 26 nov. | #2 ; pas d'Azure nécessaire pour les tests locaux |
 | [#7](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/issues/7) | Budget, régions, infra Azure | Aminata + Gémima | P0 | 26 nov. | #3, choix du compte, restrictions/quotas validés |
 | [#8](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/issues/8) | CI/CD & OIDC | Gémima (+ Aminata) | P0 | 28 nov. | Tests de #5 pour CI ; #7 pour déploiement CD |
-| [#9](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/issues/9) | Dashboard / persistance | Gémima au départ, Omar ensuite si disponible | P1 | 29 nov. | #2 pour maquette ; #6 et #7 pour données réelles |
-| [#10](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/issues/10) | Observabilité, KQL, alertes | Gémima/Aminata, puis Omar si disponible | P0 | 29 nov. | #7 et premières traces de #5/#6 |
-| [#11](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/issues/11) | Tests E2E et captures | Équipe active | P0 | 30 nov. | #5–#10 selon scénario ; tester tôt par morceau |
+| [#9](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/issues/9) | Dashboard / persistance | **Omar pilote**, Gémima en appui | P1 | 29 nov. | #2 pour maquette ; #6 et #7 pour données réelles |
+| [#10](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/issues/10) | Observabilité, KQL, alertes | **Omar pilote**, Gémima/Aminata en appui intégration | P0 | 29 nov. | #7 et premières traces de #5/#6 |
+| [#11](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/issues/11) | Tests E2E et captures | **Quatre membres** ; Omar pilote les preuves liées à R4 | P0 | 30 nov. | #5–#10 selon scénario ; tester tôt par morceau |
 | [#12](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/issues/12) | Rapport, coûts, soutenance, nettoyage | Toute l'équipe, Gémima coordonne | P0 | 1er déc. rapport ; 2 déc. soutenance ; nettoyage ensuite | Documentation tout au long du développement |
 
 Les dates correspondent à une **planification interne proposée**. Le QCM du 24 novembre doit être pris en compte dans la charge de travail. Le rendu est un rapport PDF avec captures et documentation ; la **vidéo est optionnelle** selon l'enseignante.
@@ -89,17 +89,17 @@ Les dates correspondent à une **planification interne proposée**. Le QCM du 24
 
 ## 6. Vues à configurer dans Projects
 
-- **Vue 1 / Table** : toutes les Issues, `Assignees`, `Status`, `Priority`, `Target date`, `Workstream` ; trier par échéance puis priorité.
+- **Vue 1 / Table** : 12 Issues et valeurs `Assignees`, `Status`, `Priority`, `Date cible`, `Workstream` confirmées par les captures du 24/11/2026.
 - **Kanban — Suivi des tâches** : disposition Board, champ de colonnes `Status`, cinq statuts ci-dessus ; glisser-déposer une carte uniquement lorsque son état change réellement.
-- **Roadmap — Échéances** : nouvelle vue Roadmap, champ de date `Target date`, bornes novembre–décembre 2026.
+- **Roadmap — Échéances** : vue enregistrée avec `Date cible` comme champ de date selon contrôle Work ; affichage des dates à ajuster si échéances modifiées.
 - **Par membre (facultatif)** : vue Table, groupée par `Assignees`.
 
-Le projet est **privé** sur la capture d'écran : inviter les autres membres dans les paramètres d'accès Projects ; inviter séparément les collaborateurs au dépôt si nécessaire. Ces deux accès ne sont pas forcément équivalents.
+Le Project reste **privé** ; les quatre collaborateurs disposent désormais de l'accès nécessaire au dépôt et au tableau Projects, confirmé le 24/11/2026.
 
 ## 7. Conventions Git et qualité
 
 - `main` : branche stable ; éviter tout commit direct de fonctionnalité.
-- Branches courtes liées aux Issues : `docs/project-management`, `docs/azure-sharing`, `feat/ml-training`, `feat/ml-api`, `feat/event-pipeline`, `infra/azure-core`, `feat/dashboard`, `feat/observability`.
+- Branches courtes liées aux Issues : `docs/project-management`, `docs/azure-sharing`, `feat/ml-training`, `feat/ml-api`, `feat/event-pipeline`, `infra/azure-core`, `ci/github-actions`, `feat/dashboard`, `feat/observability`, `test/e2e-scenarios`, `docs/final-report`.
 - Une PR avec description, Issue associée, tests/captures si pertinents, et relecture avant fusion.
 - Ne jamais ajouter mot de passe, jeton, secret Azure, clé de stockage ou fichier de connexion sensible dans GitHub.
 - Utiliser les commentaires de l'Issue pour documenter un blocage ; tenir à jour le Word partagé pour le journal de temps et le rapport.
@@ -109,10 +109,10 @@ Le projet est **privé** sur la capture d'écran : inviter les autres membres da
 - [x] Dépôt créé, `main` disponible et 12 Issues importées dans GitHub Projects (confirmé par capture).
 - [x] Vue Kanban et statuts `À faire`, `En cours`, `En revue`, `Terminé`, `Bloqué` (confirmés par capture).
 - [x] Issue #1 déplacée en `En cours` (confirmée par capture).
-- [ ] Ajouter les champs `Priority`, `Target date`, `Workstream`.
-- [ ] Créer et régler la vue `Roadmap`.
-- [ ] Renseigner les priorités et échéances dans les **champs natifs** de Projects (table de la section 4).
-- [ ] Relier les dépendances natives entre les Issues pertinentes.
+- [x] Créer `Priority` et `Workstream` et conserver `Date cible`.
+- [x] Créer et régler la vue `Roadmap` reliée à `Date cible` (confirmé dans Work).
+- [x] Renseigner et vérifier par captures les **36 valeurs natives** de Projects (table de la section 4).
+- [x] Relier et vérifier les six dépendances natives entre les Issues pertinentes.
 - [x] Membres invités au dépôt et assignations GitHub effectuées sur les 12 Issues avec les usernames vérifiés.
-- [ ] Vérifier le partage du tableau Projects privé et du dépôt public.
-- [ ] Réviser le plan et commencer les tâches en parallèle.
+- [x] Vérifier le partage du tableau Projects privé et du dépôt public.
+- [x] Réviser le plan et confirmer le démarrage en parallèle possible ; les tâches techniques restent à réaliser.
