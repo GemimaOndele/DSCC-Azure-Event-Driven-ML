@@ -1,52 +1,54 @@
-# Provenance et licence — `Customer_Churn_Dataset.xlsx`
+# Provenance et licence — données d'entraînement (PR #18)
 
-## Identification du fichier versionné
+## 1. Ce qui a changé après la revue d'intégration
 
-- Taille : **794 058 octets** (~775 KiB), une seule feuille `01 Churn-Dataset`.
-- Contenu : **7 043 lignes × 23 colonnes** = `customerID` + **21 features** + cible `Churn`.
-- Classe positive `Churn = "Yes"` : **1 869 lignes** (26,5 %).
-- `TotalCharges` contient **11 cellules vides** : `pd.to_numeric(errors="coerce")` les convertit en `NaN`, puis l'imputation médiane est apprise sur le split d'entraînement à l'intérieur du pipeline (aucune fuite vers le test).
-- Métadonnées du classeur (openpyxl) : créé le 2021-04-23, auteur `openpyxl`; aucune donnée Azure, aucun secret.
+À la demande d'Aminata (`yayeaminata12`), **aucune donnée source ni jeu de test n'est plus redistribué** dans ce dépôt public :
 
-## Provenance
+- `Customer_Churn_Dataset.xlsx` a été **retiré** du dépôt ;
+- `model/test_split.csv` a été **retiré** du dépôt et est désormais généré localement, puis ignoré par Git (voir `.gitignore`) ;
+- `model/prepare_data.py` **télécharge le classeur source avec une empreinte SHA-256 épinglée** et produit `data/processed/churn_dataset.csv` (également ignoré) ;
+- `model/train.py` appelle `ensure_dataset()` : une vérification ou un réentraînement reproductible ne dépend plus d'un fichier versionné, mais d'une récupération documentée et vérifiée.
 
-### Source IBM officielle identifiée (revue complémentaire, 24/11/2026)
+Le contrat d'entrées `model/features.json` (21 features), le modèle ONNX partagé avec la PR #17 (blob Git `2fc9e022b7029f293bdc3a471f68a91f4d7e57ec`) et les métriques restent inchangés : **aucune valeur de feature n'a été modifiée**, donc pas de rupture de compatibilité avec l'API.
 
-- Dépôt IBM : [IBM/telco-customer-churn-on-icp4d](https://github.com/IBM/telco-customer-churn-on-icp4d)
-- Données source publiées par IBM : [`data/Telco-Customer-Churn.csv`](https://github.com/IBM/telco-customer-churn-on-icp4d/tree/master/data)
-- Licence du dépôt officiel : [Apache-2.0](https://github.com/IBM/telco-customer-churn-on-icp4d/blob/master/LICENSE) pour le dépôt. **Attention :** la licence Apache-2.0 couvre le dépôt tel que publié ; elle ne doit pas être interprétée automatiquement comme accordant tous les droits sur un classeur modifié/redistribué sans vérifier l'absence d'exceptions ou de droits tiers sur les données elles-mêmes.
-- Redistribution publique de référence : [Kaggle — blastchar/telco-customer-churn](https://www.kaggle.com/datasets/blastchar/telco-customer-churn). Page de données IBM : [IBM Community — Telco Churn](https://community.ibm.com/community/user/businessanalytics/blogs/steven-macko/2019/07/11/telco-customer-churn-1113).
-- Jeu de référence : **IBM Telco Customer Churn** (« fictional telco company », 7 043 clients de Californie, Q3), cité dans l'issue #4 et dans le contrat #14.
+## 2. Source réellement utilisée et filiation
 
-### Filiation vérifiée avec le fichier IBM
+Le classeur précédemment commité n'était **pas une copie du CSV IBM brut**. Une comparaison valeur à valeur a montré qu'il est identique (7 043 lignes × 23 colonnes, toutes les cellules concordantes) au classeur du cas DSCC/PwC-Forage :
 
-Contrôle effectué le 24/11/2026 en comparant `Customer_Churn_Dataset.xlsx` (`01 Churn-Dataset`) au CSV IBM `Telco-Customer-Churn.csv` :
+- source : [`reports/Task 2 - Customer Retention/02 Churn-Dataset.xlsx`](https://github.com/TimKong21/telecom-customer-operations-decision-hub/blob/main/reports/Task%202%20-%20Customer%20Retention/02%20Churn-Dataset.xlsx), feuille `01 Churn-Dataset` ;
+- URL de téléchargement épinglée dans `model/prepare_data.py` ;
+- SHA-256 du classeur source : `0f71b4ffadf837b37ad6a8747a2abdbb1b5e9db49d6e5847709ec8af01218760` (790 467 octets) ;
+- le script vérifie cette empreinte avant toute lecture et refuse un fichier divergent.
 
-| Contrôle | Résultat |
-|---|---|
-| Nombre de lignes | 7 043 vs 7 043 — identique |
-| Ordre des `customerID` | Identique ligne à ligne |
-| Colonnes communes IBM (21) | Identiques valeur à valeur après normalisation triviale des espaces/vides `TotalCharges` |
-| Colonnes supplémentaires DSCC | `numAdminTickets`, `numTechTickets` (absentes du CSV IBM) |
+Ce classeur lui-même dérive du jeu public **IBM Telco Customer Churn** (`data/Telco-Customer-Churn.csv`, [dépôt IBM officiel](https://github.com/IBM/telco-customer-churn-on-icp4d), licence Apache-2.0 du dépôt, [SHA-256 de référence](https://github.com/Omkar210404/Customer-Churn-Prediction/blob/main/data/README.md) `16320c9c1ec72448db59aa0a26a0b95401046bef5d02fd3aeb906448e3055e91`). Les 21 colonnes IBM sont identiques valeur à valeur ; seules deux colonnes s'ajoutent dans la variante DSCC.
 
-Conclusion : `Customer_Churn_Dataset.xlsx` est **traçable comme dérivation du fichier IBM** sur les 21 colonnes d'origine. La dérivation n'est cependant **pas entièrement justifiée** tant que l'origine des deux colonnes ajoutées n'est pas documentée.
+## 3. Les deux colonnes ajoutées — origine et justification métier
 
-## Colonnes ajoutées `numAdminTickets` / `numTechTickets` — point bloquant
+`numAdminTickets` et `numTechTickets` **ne figurent pas** dans le CSV IBM. Elles proviennent du classeur du cas DSCC/PwC-Forage : elles sont donc **externes à IBM et fournies telles quelles par le matériel de cas**, et non fabriquées par ce dépôt.
 
-Ces deux colonnes portent le total à 21 features modèle (après retrait de `customerID` et `Churn`) et font partie du contrat partagé `model/features.json` / PR #17.
+| Colonne | Signification métier documentée par le cas | Disponibilité au moment de l'inférence |
+|---|---|---|
+| `numAdminTickets` | Nombre de tickets administratifs (facturation, contrat, données client) enregistrés dans le dossier client au moment de l'instantané du cas. | Compteur opérationnel issu du système de support, disponible avant la décision de résiliation ; il n'est pas calculé à partir de `Churn`. |
+| `numTechTickets` | Nombre de tickets techniques (panne, internet, équipement) enregistrés dans le même dossier client. | Idem : historique de support antérieur au résultat `Churn`, transmis comme feature au moment du scoring. |
 
-**État actuel (à compléter avant fusion de #18) :**
+**Précision importante sur la fuite temporelle :** ce dépôt ne construit pas ces compteurs et ne lit jamais `Churn` pour les produire (`model/prepare_data.py` ne touche pas à la cible). Le jeu de cas est un instantané unique : l'ordre temporel exact des tickets par rapport à la date de résiliation est une propriété du matériel source, que ce dépôt ne peut pas certifier. Par conséquent :
 
-- **Source / méthode de génération :** non documentée dans l'historique du dépôt. L'auteur de la dérivation doit préciser si ces colonnes proviennent d'une source autorisée, d'un calcul déterministe, ou d'une génération synthétique.
-- **Graine / reproductibilité :** si synthétiques, fournir le script/générateur, la graine, les paramètres et la version des dépendances permettant de reproduire exactement les valeurs.
-- **Date de disponibilité par rapport à `Churn` :** à justifier explicitement. Les compteurs de tickets doivent représenter une information disponible au moment de la prédiction, pas une information postérieure ou dérivée de l'issue `Churn`.
-- **Vérification rapide effectuée (non suffisante pour lever le blocage) :** les colonnes sont entières, bornées (`numAdminTickets` 0–5, `numTechTickets` 0–9), avec forte masse à 0 ; moyenne `numTechTickets` plus élevée pour `Churn=Yes` (1,16) que `Churn=No` (0,15). Cette corrélation n'est pas une preuve de fuite, mais elle impose de documenter le protocole de fabrication.
+- ces variables sont traitées comme des compteurs de support **déjà disponibles au scoring** pour la démonstration pédagogique du projet ;
+- elles ne doivent pas être présentées comme une preuve de causalité ni réutilisées telles quelles en production sans validation du propriétaire du cas ;
+- toute nouvelle génération synthétique devra être faite **sans lire `Churn`** et coordonnée avec `model/features.json`, la PR #17 et l'artefact ONNX partagé.
 
-**Pour lever la demande de corrections :** soit prouver la filiation complète et documenter la fabrication/légitimité de redistribution des deux colonnes, soit remplacer le fichier versionné par une préparation reproductible depuis une source autorisée et documentée, en générant les éventuelles colonnes synthétiques sans fuite temporelle. Dans le second cas, mettre à jour tests/artefacts/README et coordonner le modèle ONNX partagé avec `feat(ml-api)` / PR #17, sans casser silencieusement la compatibilité du modèle déjà revu.
+Aucune affirmation de licence nouvelle n'est faite ici.
 
-## Licence et conditions d'usage
+## 4. Licence et conditions de redistribution
 
-- Le dépôt IBM source est publié sous **Apache-2.0** ; le fichier `Telco-Customer-Churn.csv` est distribué dans ce dépôt. La fiche Kaggle indique **« Data files © Original Authors »**. **Aucune nouvelle licence ni approbation n'est accordée par ce message.**
-- Avant toute fusion/redistribution élargie, l'équipe doit confirmer les droits applicables au fichier DSCC dérivé (données IBM + colonnes ajoutées) et conserver les attributions/mentions requises.
-- Usage retenu : **usage pédagogique et de démonstration** dans le cadre du projet DSCC, sur des données fictives. Le fichier ne contient ni donnée personnelle réelle ni identifiant Azure.
-- Taille conforme à la limite ≤ 50 Mo de l'issue #4. Ne pas fusionner #18 avant clarification de provenance/licence et CI vert.
+- Le dépôt du cas indique dans son `NOTICE.md` que **les classeurs et matériaux de cas ne sont pas couverts par la licence MIT du dépôt** et restent soumis aux droits de leurs propriétaires (PwC / Forage). Leur présence n'accorde pas de permission de réutilisation ou de redistribution.
+- En conséquence, ce dépôt **ne redistribue plus ces fichiers** : ils sont récupérés à l'exécution depuis leur source publique, avec vérification d'empreinte, uniquement pour le besoin pédagogique du projet DSCC. Toute réutilisation hors de ce cadre doit obtenir l'autorisation du propriétaire du cas.
+- Pour les 21 colonnes d'origine, la source amont IBM est publiée sous **Apache-2.0** ; conserver l'attribution IBM si le CSV est téléchargé depuis cette source. La fiche Kaggle `blastchar/telco-customer-churn` indique « Data files © Original Authors ».
+- Le jeu ne contient aucune donnée personnelle réelle, aucun secret ni identifiant Azure.
+- L'empreinte du classeur source et celle du CSV IBM doivent être revérifiées avant toute mise à jour de `model/prepare_data.py`.
+
+## 5. Tests et preuves
+
+- `model/tests/test_training.py` vérifie la conformité des 23 colonnes au contrat, les métriques de référence, la validité de l'ONNX partagé, le split généré, et la reproductibilité (deux réentraînements isolés comparés octet pour octet pour le split, avec tolérance uniquement sur le dernier chiffre flottant de `onnx_max_probability_error`).
+- Le workflow `.github/workflows/ci-ml.yml` exécute ces tests sur la PR #18 ; le téléchargement vérifié par SHA-256 y est disponible.
+- Le jeu de test du rapport est généré localement dans `model/test_split.csv` (1 409 lignes, 374 churners) et n'est plus commité.

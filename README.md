@@ -9,14 +9,15 @@ Event-driven Telecom Customer Churn prediction pipeline on Microsoft Azure, feat
 The versioned churn model `1.0.0` is trained locally with:
 
 ```bash
+py -3.12 model\prepare_data.py   # vérification SHA-256, données non commitées
 py -3.12 model\train.py
 ```
 
 - Authoritative input contract: [`model/features.json`](model/features.json) — **21 features**, `customerID` used only as an identifier, `Churn` never sent to the API.
 - `TotalCharges` is coerced to numeric; blank cells are median-imputed inside the pipeline (no manual imputation before the split).
 - Stratified 80/20 split, fixed seed `42`, logistic regression with `class_weight="balanced"`, decision threshold `0.5`.
-- Metrics, baseline comparison and reproducibility evidence are produced in `model/metrics.json`; the protocol and the held-out test split are described in the PR #18 evidence (`model/TRAINING_EVIDENCE.md` on `feat/ml-training`).
-- Dataset provenance/licence: IBM Telco Customer Churn sample (fictional customers), distributed via Kaggle as `blastchar/telco-customer-churn` ("Data files © Original Authors"); details in `model/DATASET.md` on `feat/ml-training`. No secret or real personal data.
+- Metrics, baseline comparison and reproducibility evidence are produced in `model/metrics.json`; the protocol is described in the PR #18 evidence (`model/TRAINING_EVIDENCE.md` on `feat/ml-training`). The held-out split is generated locally in `model/test_split.csv` and is **not committed**.
+- Dataset provenance/licence: the DSCC case workbook is **not redistributed**; `model/prepare_data.py` fetches it from its public source with a pinned SHA-256. The 21 base columns come from IBM Telco Customer Churn (Apache-2.0); the two ticket counters are supplied by the case material. Details and redistribution terms: `model/DATASET.md` on `feat/ml-training`. No secret or real personal data.
 
 ## Inference API
 

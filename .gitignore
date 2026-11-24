@@ -1,0 +1,7 @@
+# The case workbook and all derived data are fetched locally, never committed.
+data/
+model/test_split.csv
+
+# Python artefacts
+__pycache__/
+*.py[cod]

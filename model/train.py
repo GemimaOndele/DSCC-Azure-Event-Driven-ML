@@ -17,11 +17,12 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
+from prepare_data import ensure_dataset
+
 
 RANDOM_SEED = 42
 MODEL_VERSION = "1.0.0"
 ROOT = Path(__file__).resolve().parents[1]
-DATASET = ROOT / "Customer_Churn_Dataset.xlsx"
 OUTPUT_DIR = ROOT / "model"
 MODEL_PATH = OUTPUT_DIR / f"model-{MODEL_VERSION}.joblib"
 ONNX_MODEL_PATH = OUTPUT_DIR / f"model-{MODEL_VERSION}.onnx"
@@ -33,6 +34,7 @@ TARGET = "Churn"
 
 
 def main() -> None:
+    dataset_path = ensure_dataset()
     features_contract = json.loads(FEATURES_PATH.read_text(encoding="utf-8"))
     expected_features = [feature["name"] for feature in features_contract["features"]]
     if features_contract["model_version"] != MODEL_VERSION:
@@ -40,7 +42,7 @@ def main() -> None:
     if features_contract["feature_count"] != len(expected_features):
         raise ValueError("The feature contract is internally inconsistent.")
 
-    data = pd.read_excel(DATASET, sheet_name="01 Churn-Dataset")
+    data = pd.read_csv(dataset_path)
     customer_ids = data[IDENTIFIER].copy()
     data = data.drop(columns=[IDENTIFIER])
     data["TotalCharges"] = pd.to_numeric(data["TotalCharges"], errors="coerce")
