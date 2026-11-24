@@ -18,7 +18,7 @@ Telecom Customer Churn: upload a small CSV of clients into Azure Blob Storage (`
 - **Implemented schema as of 24 Nov (PRs #17/#18):** `customerID` as an identifier **plus 21 model inputs**. The current API Pydantic model accepts the following 21 names; this list is **not yet an approved integration contract**:
   - **Categorical (15):** `gender`, `Partner`, `Dependents`, `PhoneService`, `MultipleLines`, `InternetService`, `OnlineSecurity`, `OnlineBackup`, `DeviceProtection`, `TechSupport`, `StreamingTV`, `StreamingMovies`, `Contract`, `PaperlessBilling`, `PaymentMethod`.
   - **Numeric (6):** `SeniorCitizen`, `tenure`, `MonthlyCharges`, `TotalCharges`, `numAdminTickets`, `numTechTickets`.
-- The earlier proposal of **19** inputs refers to a different schema and is **not compatible** with the current 21-input ONNX model. Elias and Aminata must approve the final list, validation and feature types. Both #17 and #18 now contain the same `model/features.json` as the proposed canonical feature schema, and their automated tests check it. Approval by the team is still required.
+- The earlier proposal of **19** inputs refers to a different schema and is **not compatible** with the current 21-input ONNX model. Elias and Aminata must approve the final list, validation and feature types. Both #17 and #18 contain compatible 21-input schemas, but their `source_dataset` metadata now differs; reconcile before integration, and their automated tests check it. Approval by the team is still required.
 - The target variable `Churn` must **not** be required by the inference API.
 - `TotalCharges` preprocessing must match training.
 - Invalid extension, excessive size, or missing mandatory columns → copy to `rejected/` and write `<blobName>.reason.json` with a human-readable rejection reason.
@@ -46,7 +46,7 @@ Storage queue: `inference-requests`. Its poison queue is `inference-requests-poi
 - `GET /version`: API version and semantic model version.
 - `POST /predict`: **implemented by PR #17**, single-customer inference with the 21 model inputs and optional `customerID`, returning one prediction.
 - `POST /predict/batch`: **implemented by PR #17** with `{"rows":[...]}` (one row per client); returns `predictions` per client and a global `summary`. This is the **proposed canonical worker route** (option A from Elias, supported in Aminata's review), pending team sign-off and merge.
-- `GET /metrics`: HTTP request count `inference_calls`, count of predicted client rows `inferred_rows` and `average_latency_ms`. Omar (R4) should confirm `inferred_rows` for KQL/alerts; this endpoint is currently submitted in PR #17.
+- `GET /metrics`: HTTP request count `inference_calls`, count of predicted client rows `inferred_rows` and `average_latency_ms`. Omar (R4) confirmed `inferred_rows` for KQL/alerts in his #17 review; this endpoint is currently submitted in PR #17.
 
 ### `POST /predict/batch` request (shape implemented in PR #17; illustrative incomplete row)
 
@@ -130,7 +130,7 @@ Proposed shared variable names in the Excel: `MODEL_API_URL`, `COSMOS_ENDPOINT`,
 | Cloud shape | One Function App / 3 Functions proposed, Python 3.12 | Confirm Flex Consumption **512 MiB**, region/quotas before Azure deployment |
 | Queue errors | Five retries and poison queue proposed | Agree on HTTP permanent/transient classification, timeout and idempotent writes |
 | CSV and persistence | 1 MiB cap and Blob ETag dedupe proposed | Confirm row-level failure policy, output JSON, Cosmos metadata, safe stable ID |
-| Documentation and source data | PR #18 currently commits `Customer_Churn_Dataset.xlsx` and `model/test_split.csv`; the documentation cites "Data files © Original Authors" without establishing redistribution permission | Confirm legal redistribution or replace the public data files with a reproducible lawful retrieval/test procedure before merging #18 |
+| Documentation and source data | PR #18 at `5c7eb97` removes the workbook and test split from the current tree and retrieves the source with SHA-256 verification; permission for automated educational use and historical copies remain to be checked | Confirm source permission and team decision on temporal leakage before merging #18 |
 
 **Implementation status:** The model and API are in open PRs, **not yet merged to `main`**. The final decision belongs to the team; this document records observed differences without silently approving an incompatible change.
 
@@ -143,3 +143,16 @@ Proposed shared variable names in the Excel: `MODEL_API_URL`, `COSMOS_ENDPOINT`,
 - [ ] Update this document through a reviewed Pull Request before implementing incompatible changes.
 
 **Related GitHub issues:** #2 #4 #5 #6 #7 #9 #10.
+
+
+## 10. Integration decisions proposed for final R2/R1 review (24 Nov 2026)
+
+These values reflect the current `feat/event-pipeline` implementation, not a new claim of team approval or deployed behavior.
+
+- Worker HTTP connect timeout: **2 s**; read timeout: **10 s** (`API_CONNECT_TIMEOUT_SECONDS`, `API_READ_TIMEOUT_SECONDS`). These are separate limits, not a total wall-clock deadline. Confirm with R2 and test timeout/retry behavior.
+- CSV: UTF-8 (BOM accepted), comma separator, canonical ordered header, no extra columns, blank rows ignored, decimal point, maximum 1 MiB and 10,000 rows. `customerID` required in CSV (1–64 characters); empty `TotalCharges` maps to null. Reject the entire file on any invalid nonblank row; no partial scoring. R2 must ensure permanent CSV errors in the worker are rejected rather than retried, including when content changes after dispatch.
+- Rejection JSON currently implemented: `{"blobName":"batch_01.csv","reason":"validation error","status":"rejected"}`; reason limited to 2,000 characters. Confirm original-file retention and avoid sensitive values in logs.
+- Cosmos ID currently implemented: sanitized filename stem (max 40 characters), hyphen, first 16 hex characters of SHA-256 of UTF-8 `blobName|etag`. Partition key `/fileName`. Verify conditional reads against the event ETag, concurrent duplicate delivery and distinct output versions; the digest alone does not guarantee exactly-once inference.
+- R1: 21 features and threshold 0.5 remain provisional for the academic demo; the two ticket counters have no demonstrated pre-churn availability. Omar's ablation is reported in #18. Do not freeze the schema or claim production validity until the team chooses 21 or 19 features and confirms dataset usage rights. If 19, retrain and update API, worker, ONNX, tests and metrics together.
+- Integration: Omar identified sequential merge conflicts in `README.md` and `model/features.json` between #17/#18. Resolve on a reviewed branch and rerun both test suites and Docker build; do not merge either in isolation until the dataset decision is recorded.
+- R4: Omar confirmed `inferred_rows` for KQL; #19 dashboard consumes `{count,limit,results}` from `/api/recent`. Real Azure evidence remains pending.
