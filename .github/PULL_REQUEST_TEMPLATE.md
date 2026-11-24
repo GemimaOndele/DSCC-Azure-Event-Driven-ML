@@ -1,7 +1,7 @@
 ## Objet de cette Pull Request
 Décrire brièvement les modifications et leur intérêt pour le pipeline DSCC.
 
-**Issue liée :** Closes #...
+**Issue liée :** Relates to #... *(ne remplacer par `Closes #N` que lorsque les critères d'acceptation de l'Issue N sont entièrement satisfaits)*
 
 ## Domaine / responsable
 - [ ] R1 — Modèle ML & API
@@ -11,7 +11,7 @@ Décrire brièvement les modifications et leur intérêt pour le pipeline DSCC.
 - [ ] Documentation / organisation
 
 ## Vérifications avant revue
-- [ ] Code ou documentation conforme au contrat technique `docs/technical-contract.md` (si applicable).
+- [ ] Contrat technique connu et vérifié ; signaler explicitement tout écart avec `docs/technical-contract.md` (notamment les 21 inputs du modèle, le batch versus unitaire pour `/predict`).
 - [ ] Tests locaux exécutés et résultats indiqués.
 - [ ] Capture ou preuve reproductible jointe lorsque nécessaire au rapport PDF.
 - [ ] Aucun secret (token, clé Azure, connexion, `.env`, `local.settings.json`) commité.
@@ -33,4 +33,4 @@ Liens vers `docs/screenshots/`, journal ou captures (sans secrets) :
 Indiquer toute Issue bloquante et les conséquences sur les autres lots.
 
 ## Revue
-La branche `main` est protégée : **une approbation de quelqu'un d'autre est requise** avant la fusion.
+La branche `main` est protégée : **une approbation d'un autre membre est requise** avant la fusion. Les tests locaux déclarés ne remplacent pas une approbation GitHub ; ne pas clôturer une Issue qui dépend encore de tests d'intégration.
