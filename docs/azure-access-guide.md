@@ -70,29 +70,31 @@ Si l'invitation externe Entra, la visibilité du groupe ou IAM sont bloquées pa
 ## 5. Règles de coexistence, sécurité et coûts
 
 1. **Une création de ressources à la fois** : annoncer « je crée X » dans le groupe et coordonner l'exécution.
-2. Créer les ressources prévues sous `rg-projet-g2cc`, dans la région compatible **après vérification** (`francecentral` n'est pas garantie sur chaque abonnement). Inventorier aussi toute ressource créée automatiquement hors du groupe.
+2. Créer les ressources prévues sous `rg-projet-g2cc`, dans une région compatible **après vérification** : `francecentral` reste proposée, **non garantie** par la politique Azure for Students. Vérifier **régions autorisées, quotas et disponibilité de Flex Consumption, Azure Container Apps et Cosmos DB** sur le compte retenu ; prévoir un essai de création **contrôlé et budgété** de Cosmos DB assez tôt une fois la souscription approuvée pour identifier les contraintes de capacité (sans créer de ressource dans cette PR). Inventorier aussi toute ressource créée automatiquement hors du groupe.
 3. Déposer les commandes reproductibles, **commentées**, sous `infra/` (sans secrets) et documenter leur suppression.
 4. Ne pas publier mot de passe, clé Azure, SAS, connection string, token ou fichier `.env` dans GitHub, WhatsApp, captures ou Word partagé.
 5. Partager seulement les paramètres de connexion **non secrets** utiles : URL publique de l'API/site, nom du stockage, endpoint Cosmos DB. Cela n'accorde pas de droits sur leurs données.
-6. Budget du projet : **25 USD maximum**, cible interne **moins de 5 USD**. Configurer suivi des coûts et alertes ; collecter les captures.
+6. Budget du projet : **25 USD maximum**, cible interne **moins de 5 USD**. Configurer les trois seuils d'alerte demandés : **20 %, 50 % et 80 %** du budget (soit 5, 12,50 et 20 USD pour un budget de 25 USD). Consigner les destinataires, le coût réel, la date des alertes et les captures. **Les alertes ne bloquent pas automatiquement les dépenses.**
 
 ## 6. Déploiement GitHub Actions + OIDC
 
 - R1/R2 et R4 créent des branches, ouvrent des Pull Requests et obtiennent la revue exigée par la protection de `main`.
-- Un workflow sur `main` peut déployer dans Azure au moyen d'une **federated identity credential** liée à une **user-assigned managed identity** ou une application/service principal Microsoft Entra. Aucune clé de service longue durée dans GitHub.
+- **Choix du projet proposé par Aminata : une User-Assigned Managed Identity (UAMI)** avec *federated identity credential* pour GitHub Actions OIDC, conformément à son interprétation des consignes de cours. Ne retenir l'application/service principal Entra que si une validation explicite du professeur l'autorise. Aucune clé de service longue durée dans GitHub.
 - L'identité de déploiement reçoit uniquement les rôles et scopes nécessaires, idéalement le RG, et pas l'abonnement entier.
 - GitHub Actions doit disposer de `id-token: write` et `contents: read` pour le login OIDC.
-- Configurer un environnement GitHub `production` avec revue manuelle avant déploiement, si les fonctionnalités et paramètres du dépôt le permettent. **La revue de PR et l'approbation de déploiement sont deux validations distinctes.**
+- Préparer les identifiants de configuration GitHub Actions `AZURE_CLIENT_ID` (client ID de l'UAMI), `AZURE_TENANT_ID` et `AZURE_SUBSCRIPTION_ID`. Ce sont des **identifiants**, non des clés ou mots de passe ; ne pas les confondre avec des credentials, et leur appliquer les règles de confidentialité de l'équipe. Utiliser `azure/login` avec OIDC et la fédération GitHub restreinte à l'environnement et au workflow retenus.
+- Ne pas créer d'identité ou d'attribution RBAC avant le choix de l'abonnement, la vérification du tenant et l'accord du titulaire des crédits.
+- Configurer si disponible un environnement GitHub `production` avec *required reviewers* avant déploiement. **La revue de PR et l'approbation de déploiement sont deux validations distinctes.** Si la revue d'environnement n'est pas disponible (selon visibilité du dépôt, plan et paramètres), privilégier un **`workflow_dispatch` manuel** réservé aux comptes autorisés, et conserver les preuves de validation ; vérifier l'accessibilité effective de cette option avant d'annoncer un déploiement contrôlé.
 
 ## 7. Décisions encore nécessaires
 
 - [ ] Solde/abonnement d'intégration retenu entre Gémima et Aminata.
-- [ ] Vérification de `francecentral`, quotas et services (Functions Flex, Container Apps, Cosmos DB).
+- [ ] Vérification de la liste des régions autorisées, des quotas et de la capacité réelle des services (Functions Flex, Container Apps, Cosmos DB) ; planifier un essai de création Cosmos DB après validation du compte et du budget.
 - [ ] Nom `rg-projet-g2cc` validé et groupe effectivement créé.
 - [ ] Propriétaire effectif de l'abonnement et invité RBAC défini.
 - [ ] Entra B2B autorisé ou repli partage d'écran établi.
-- [ ] Identité OIDC et environnement GitHub `production` configurés.
-- [ ] Budget et alertes testés au périmètre autorisé.
+- [ ] UAMI avec fédération OIDC et rôles minimaux configurés après choix de la souscription ; trois identifiants GitHub Actions enregistrés ; revue de l'environnement `production` ou repli `workflow_dispatch` testés.
+- [ ] Budget et alertes de seuils **20 % / 50 % / 80 %** testés au périmètre autorisé.
 - [ ] Captures, incidents, preuves et procédures de nettoyage consignés dans le Word collaboratif.
 
 **Cette procédure est documentaire : aucune commande Azure n'a été exécutée en créant ce fichier.**
