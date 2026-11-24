@@ -1,6 +1,6 @@
 # DSCC — Fiche de démarrage de l'équipe
 
-**Date de référence : 18 novembre 2026**  
+**Date de référence : 18 novembre 2026 — disponibilité R4 actualisée le 24 novembre 2026**  
 **Soutenance : mercredi 2 décembre 2026**  
 **Projet GitHub :** https://github.com/users/GemimaOndele/projects/5  
 **Issues :** https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/issues
@@ -14,9 +14,9 @@
 | **Gémima** (@GemimaOndele) | Coordonner et faire valider le contrat CSV, API, queue, DB | `docs/technical-contract` | [#2](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/issues/2) | Relecture et accord sur [PR #14](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/pull/14), puis contrat versionné |
 | **Aminata** (@yayeaminata12) | Relire/compléter la procédure d'accès partagé Azure, **sans encore créer de ressource** | `docs/azure-sharing` | [#3](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/issues/3) | [PR #15](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/pull/15) validée, guide clair, décisions et captures |
 | **Elias** (@eliascre) | Préparer le jeu de données Telecom Churn, script de nettoyage et entraînement local | `feat/ml-training` | [#4](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/issues/4) | `model/`, mesures (F1 et ROC-AUC + baseline), modèle versionné |
-| **Omar** (@omk181920) | Termine d'abord son TP ; au retour, contribuer au dashboard / KQL | `feat/dashboard`, puis `feat/observability` | [#9](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/issues/9), [#10](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/issues/10) | Dashboard et requêtes KQL une fois les données disponibles |
+| **Omar** (@omk181920) | **Disponible, pilote actif R4** : dashboard, KQL, métriques et alertes | `feat/dashboard`, puis `feat/observability` | [#9](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/issues/9), [#10](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/issues/10) | Dashboard Chart.js et preuves d'observabilité ; participe aussi aux tests E2E #11 et au rapport #12 |
 
-**Relais d'Omar :** Gémima peut préparer un tableau de bord minimal, et Aminata/Gémima peuvent commencer la supervision nécessaire aux tests ; le pipeline ne doit **pas** dépendre du retour d'Omar.
+**Rôles R4 depuis le 24/11/2026 :** Omar est disponible et pilote #9 et #10. Gémima apporte un soutien pour l'API, les interfaces de données, Azure et l'intégration ; Aminata aide sur l'instrumentation de l'infrastructure. Le travail peut être effectué en parallèle. Ne pas faire passer #9/#10 « En cours » avant le démarrage réel d'Omar.
 
 ## 2. Branches pour la suite
 
@@ -25,8 +25,8 @@
 | `feat/ml-api` | Elias — FastAPI, Docker, pytest, GHCR | Dès que le modèle / format `POST /predict` est convenu (#5) |
 | `feat/event-pipeline` | Aminata + Gémima — dispatcher, worker, recent, Azurite | Après validation des formats de #2, en local (#6) |
 | `infra/azure-core` | Aminata (R3) + Gémima — RG, régions, quotas, scripts Azure | Après choix de l'abonnement et décision de budget (#7) ; **aucun provisionnement sans accord** |
-| `feat/dashboard` | Gémima en relais, Omar à son retour | Maquette avec données simulées après contrat (#9) |
-| `feat/observability` | Gémima en relais, Omar à son retour | Préparer le plan de mesure sans Azure, déployer plus tard (#10) |
+| `feat/dashboard` | **Omar pilote** ; Gémima en appui intégration | Maquette avec données simulées après contrat (#9), puis connexion réelle |
+| `feat/observability` | **Omar pilote** ; Gémima et Aminata en appui | Préparer KQL, métriques et alertes ; déployer/tester après disponibilités Azure (#10) |
 | `chore/issue-pr-templates` | Gémima, relecture Elias | [PR #16](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/pull/16) à approuver |
 | `docs/project-management` | Historique de préparation du planning | Le document de planification a déjà été fusionné dans `main` (PR #13) |
 
@@ -89,7 +89,7 @@ Ouvrir ensuite une Pull Request vers `main` depuis GitHub et référencer l'Issu
 - Aminata peut **terminer la documentation #3** sans ressource Azure ni accès partagé déjà configuré.
 - `infra/azure-core` et le déploiement #7 attendent le choix de l'abonnement entre Gémima et Aminata, la région/quota autorisés et le budget.
 - CI locale #8 peut commencer dès que les premiers tests existent ; déploiement CD/OIDC après l'infrastructure.
-- Omar est **non bloquant** : l'équipe active réalise la version minimale nécessaire à la note s'il est encore indisponible.
+- Omar est **désormais disponible et pilote R4**. Il peut commencer les maquettes du dashboard et les requêtes KQL sans attendre la plateforme ; leurs validations Cloud dépendront des traces et services Azure. Gémima reste en appui sur l'intégration.
 
 ## 5. Règles GitHub et statut réel
 
@@ -97,7 +97,7 @@ Ouvrir ensuite une Pull Request vers `main` depuis GitHub et référencer l'Issu
 - [PR #14](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/pull/14) : contrat + README + CONTRIBUTING + .gitignore, ouverte, revue d'Aminata et d'Elias demandée.
 - [PR #15](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/pull/15) : guide Azure, ouverte, revue d'Aminata demandée.
 - [PR #16](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/pull/16) : modèles d'Issues et de PR, ouverte, revue d'Elias demandée.
-- **GitHub Projects :** Kanban et Roadmap créés ; **restent à vérifier/remplir** les dates cibles, Priority, Workstream, dépendances natives et accès de tous les membres au tableau privé. Les fiches Issues décrivent déjà les échéances et les dépendances en texte.
+- **GitHub Projects :** 12 dates cibles, 12 priorités et 12 Workstreams renseignés et confirmés par captures du 24/11 ; six dépendances natives vérifiées via API GitHub ; droits des quatre membres confirmés. Kanban opérationnel, Roadmap associée à « Date cible » et sauvegardée. L'Issue #1 de configuration est clôturée.
 - **Vidéo : facultative**, selon l'annonce orale de l'enseignante ; rapport PDF avec captures d'étapes obligatoire.
 - **Azure :** une seule souscription d'intégration, plafond total 25 USD, pas de VM/GPU/AKS, pas de secrets dans le dépôt.
 
