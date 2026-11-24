@@ -1,6 +1,6 @@
 # Guide de collaboration Azure — DSCC Telecom Churn
 
-**Statut : Brouillon de procédure, à relire et valider par Aminata (R3) et Gémima (R4).**  
+**Statut : Brouillon de procédure, à relire et valider par Aminata (R3) et Gémima (coordination / accès Azure). Mise à jour des responsabilités R4 : 24/11/2026.**  
 **Source principale :** message d'Aminata « Comment partager la partie Azure », reçu le 18/11/2026.  
 **Référence de gestion :** [Issue #3](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/issues/3).
 
@@ -9,9 +9,9 @@
 - **Un seul abonnement Azure for Students** retenu après comparaison des crédits de Gémima et d'Aminata, des régions et des quotas.
 - **Un groupe de ressources** proposé : `rg-projet-g2cc` (à valider avant création).
 - **R3 = Aminata** : pilotage de l'infrastructure et du déploiement ; documentation initiale avant tout provisionnement.
-- **R4 = Gémima** : pilotage supervision, dashboard, coûts et coordination ; **Omar** apporte un soutien à son retour mais ne bloque pas le projet.
+- **R4 = Omar** : disponible depuis le 24/11/2026 et désormais pilote du dashboard, de la supervision, des métriques et des alertes ; **Gémima** assure la coordination générale et l'appui à l'intégration R4/R3 avec Aminata.
 - **R1 = Elias**, ML/API local ; **R2 = Gémima + Aminata**, pipeline local.
-- **Propriétaire Azure** : celui ou celle dont l'abonnement est retenu ; cela peut être R3 ou R4. Le membre de binôme non propriétaire peut recevoir le rôle Contributor sur le groupe, si son identité est disponible dans le même tenant (ou via un invité Entra B2B).
+- **Propriétaire Azure** : celui ou celle dont l'abonnement est retenu ; il s'agit de Gémima ou d'Aminata, **indépendamment du numéro de lot R3/R4**. Le membre de binôme non propriétaire peut recevoir le rôle Contributor sur le groupe, si son identité est disponible dans le même tenant (ou via un invité Entra B2B).
 - Ne JAMAIS partager une session Microsoft, un mot de passe, un token ou une clé.
 
 ## 2. Accès RBAC ciblé au groupe
@@ -61,9 +61,9 @@ Si l'invitation externe Entra, la visibilité du groupe ou IAM sont bloquées pa
 | Membre | Domaine | Droits Azure proposés |
 |---|---|---|
 | Aminata (R3) | Infrastructure et déploiement | Owner si son abonnement est retenu ; sinon Contributor au seul groupe |
-| Gémima (R4) | Supervision, dashboard, coûts ; coordination | Owner si son abonnement est retenu ; sinon Contributor au seul groupe |
+| Gémima (coordination / appui R3 et R4) | Gestion du projet, appui à l'intégration Azure, budget en coordination avec Aminata et Omar | Owner si son abonnement est retenu ; sinon Contributor au seul groupe |
 | Elias (R1) | Entraînement, FastAPI, tests | Pas d'accès direct Azure nécessaire au départ |
-| Omar | Contribution à R4 lorsqu'il est disponible | Pas de droit Azure indispensable pour le chemin critique |
+| Omar (pilote R4) | Dashboard, observabilité, KQL, métriques et alertes | Pas de droit Azure nécessaire pour préparer le code et les requêtes localement. Un accès RBAC limité peut être étudié si nécessaire et autorisé pour les manipulations Azure. |
 
 **Nuance budgets :** un rôle Contributor au groupe n'assure pas la visibilité du crédit Azure for Students ni l'accès global à la facturation. Vérifier les permissions et restrictions Cost Management ; le propriétaire peut gérer le budget global. Des rôles supplémentaires de données Storage Blob/Queue peuvent être nécessaires pour certaines actions.
 
@@ -78,7 +78,7 @@ Si l'invitation externe Entra, la visibilité du groupe ou IAM sont bloquées pa
 
 ## 6. Déploiement GitHub Actions + OIDC
 
-- R1/R2 créent des branches, ouvrent des Pull Requests et obtiennent la revue exigée par la protection de `main`.
+- R1/R2 et R4 créent des branches, ouvrent des Pull Requests et obtiennent la revue exigée par la protection de `main`.
 - Un workflow sur `main` peut déployer dans Azure au moyen d'une **federated identity credential** liée à une **user-assigned managed identity** ou une application/service principal Microsoft Entra. Aucune clé de service longue durée dans GitHub.
 - L'identité de déploiement reçoit uniquement les rôles et scopes nécessaires, idéalement le RG, et pas l'abonnement entier.
 - GitHub Actions doit disposer de `id-token: write` et `contents: read` pour le login OIDC.
