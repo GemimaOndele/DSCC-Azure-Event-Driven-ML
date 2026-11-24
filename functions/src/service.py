@@ -103,13 +103,13 @@ def process(
         response = api.predict_batch(
             rows, blob_name=request.blobName, etag=request.etag
         )
-    except PermanentInferenceError as exc:
+    except (PermanentInferenceError, CsvContractError) as exc:
         blobs.upload_rejected(
             request.blobName, rejection_reason(request.blobName, str(exc))
         )
-        LOGGER.error("Permanent API error", extra={"status_code": exc.status_code})
+        LOGGER.warning("Permanent inference rejection", extra={"status_code": getattr(exc, "status_code", None)})
         return {"status": "rejected", "reason": str(exc)}
-    except (CsvContractError, MessageError, TransientInferenceError, InferenceError) as exc:
+    except (MessageError, TransientInferenceError, InferenceError) as exc:
         # Let the Functions host retry; after 5 deliveries the message is moved
         # to inference-requests-poison (host.json maxDequeueCount = 5).
         raise RetryableWorkerError(str(exc)) from exc
