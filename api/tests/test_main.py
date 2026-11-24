@@ -80,6 +80,7 @@ def test_prediction_and_api_routes() -> None:
     assert 0.0 <= response.json()["confidence"] <= 1.0
     assert response.json()["model_version"] == "1.0.0"
     assert metrics.json()["inference_calls"] == 1
+    assert metrics.json()["inferred_rows"] == 1
     assert metrics.json()["average_latency_ms"] >= 0
 
 
@@ -132,8 +133,9 @@ def test_batch_predict_multi_client_csv_rows() -> None:
         summary["avgChurnProbability"]
         - sum(p["churn_probability"] for p in body["predictions"]) / 3
     ) < 1e-6
-    # One HTTP request counts as one inference call, whatever the row count.
+    # One HTTP request, but three clients actually inferred (R4 monitoring).
     assert metrics.json()["inference_calls"] == 1
+    assert metrics.json()["inferred_rows"] == 3
 
 
 def test_batch_empty_rows_returns_422() -> None:
@@ -183,3 +185,56 @@ def test_batch_row_cap_returns_422() -> None:
         )
 
     assert response.status_code == 422
+
+
+def test_unit_non_finite_json_returns_422() -> None:
+    payload = json.dumps({**CUSTOMER, "MonthlyCharges": float("nan")})
+    with TestClient(app) as client:
+        response = client.post(
+            "/predict", content=payload, headers={"content-type": "application/json"}
+        )
+
+    assert response.status_code == 422
+
+
+def test_unit_numeric_overflow_returns_422() -> None:
+    """1e999 is valid JSON but decodes to inf: must not become a 500."""
+    payload = json.dumps(CUSTOMER).replace(
+        '"MonthlyCharges": 55.0', '"MonthlyCharges": 1e999'
+    )
+    with TestClient(app) as client:
+        response = client.post(
+            "/predict", content=payload, headers={"content-type": "application/json"}
+        )
+
+    assert response.status_code == 422
+
+
+def test_batch_numeric_overflow_returns_422() -> None:
+    payload = json.dumps({"rows": [CUSTOMER]}).replace(
+        '"MonthlyCharges": 55.0', '"MonthlyCharges": 1e999'
+    )
+    with TestClient(app) as client:
+        response = client.post(
+            "/predict/batch",
+            content=payload,
+            headers={"content-type": "application/json"},
+        )
+
+    assert response.status_code == 422
+
+
+def test_metrics_accumulate_inferred_rows() -> None:
+    with TestClient(app) as client:
+        client.post("/predict", json=CUSTOMER)
+        client.post("/predict/batch", json={"rows": [CUSTOMER, SECOND_CUSTOMER]})
+        client.post(
+            "/predict/batch",
+            json={"rows": [CUSTOMER, SECOND_CUSTOMER, THIRD_CUSTOMER]},
+        )
+        metrics = client.get("/metrics")
+
+    assert metrics.status_code == 200
+    assert metrics.json()["inference_calls"] == 3
+    assert metrics.json()["inferred_rows"] == 6
+    assert metrics.json()["average_latency_ms"] >= 0

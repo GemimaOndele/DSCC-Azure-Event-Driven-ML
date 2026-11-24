@@ -12,6 +12,7 @@ import numpy as np
 import onnxruntime
 from azure.monitor.opentelemetry import configure_azure_monitor
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -152,7 +153,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         providers=["CPUExecutionProvider"],
     )
     app.state.model_load_time_ms = (perf_counter() - load_started) * 1000
-    app.state.metrics = {"inference_calls": 0, "total_latency_ms": 0.0}
+    app.state.metrics = {
+        "inference_calls": 0,
+        "inferred_rows": 0,
+        "total_latency_ms": 0.0,
+    }
     app.state.metrics_lock = Lock()
     LOGGER.info(
         "Model loaded",
@@ -169,6 +174,30 @@ app = FastAPI(
     version=API_VERSION,
     lifespan=lifespan,
 )
+
+
+def _validation_safe(value: object) -> object:
+    """Render Pydantic errors JSON-serialisable: no inf/nan, no raw objects."""
+    if isinstance(value, float):
+        return value if math.isfinite(value) else "non-finite"
+    if isinstance(value, dict):
+        return {key: _validation_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_validation_safe(item) for item in value]
+    if isinstance(value, (str, int, bool)) or value is None:
+        return value
+    return str(value)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(
+    request: Request, exc: RequestValidationError
+) -> JSONResponse:
+    # JSONResponse uses allow_nan=False. An unsanitised inf/nan in a validation
+    # error (e.g. 1e999 decoded as inf) would turn the expected 422 into a 500.
+    return JSONResponse(
+        status_code=422, content={"detail": _validation_safe(exc.errors())}
+    )
 
 
 @app.middleware("http")
@@ -242,9 +271,11 @@ def _prediction(probability: float, customer_id: str | None) -> BatchPrediction:
     )
 
 
-def _record_metrics(request: Request, latency_ms: float) -> None:
+def _record_metrics(request: Request, latency_ms: float, rows: int) -> None:
+    """Count HTTP calls and the clients actually inferred (R4 monitoring)."""
     with request.app.state.metrics_lock:
         request.app.state.metrics["inference_calls"] += 1
+        request.app.state.metrics["inferred_rows"] += rows
         request.app.state.metrics["total_latency_ms"] += latency_ms
 
 
@@ -276,7 +307,7 @@ def predict(payload: CustomerFeatures, request: Request) -> PredictionResponse:
     """Unit inference, kept for backward compatibility and local worker calls."""
     probabilities, latency_ms = _run_model(_loaded_model(request), [payload])
     result = _prediction(probabilities[0], payload.customerID)
-    _record_metrics(request, latency_ms)
+    _record_metrics(request, latency_ms, rows=1)
     LOGGER.info(
         "Prediction completed",
         extra={
@@ -309,7 +340,7 @@ def predict_batch(payload: BatchRequest, request: Request) -> BatchResponse:
         threshold=DECISION_THRESHOLD,
         model_version=MODEL_VERSION,
     )
-    _record_metrics(request, latency_ms)
+    _record_metrics(request, latency_ms, rows=len(payload.rows))
     LOGGER.info(
         "Batch prediction completed",
         extra={
@@ -331,6 +362,7 @@ def predict_batch(payload: BatchRequest, request: Request) -> BatchResponse:
 def metrics(request: Request) -> dict[str, int | float]:
     with request.app.state.metrics_lock:
         inference_calls = request.app.state.metrics["inference_calls"]
+        inferred_rows = request.app.state.metrics["inferred_rows"]
         total_latency_ms = request.app.state.metrics["total_latency_ms"]
 
     average_latency_ms = (
@@ -338,5 +370,6 @@ def metrics(request: Request) -> dict[str, int | float]:
     )
     return {
         "inference_calls": inference_calls,
+        "inferred_rows": inferred_rows,
         "average_latency_ms": average_latency_ms,
     }
