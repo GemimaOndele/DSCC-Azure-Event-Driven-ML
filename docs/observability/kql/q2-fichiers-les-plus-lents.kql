@@ -1,0 +1,15 @@
+// Q2 — Les 5 fichiers les plus lents (7 derniers jours)
+// Le worker envoie l'en-tête X-DSCC-Blob ; l'API l'attache au span de requête
+// (customDimensions["dscc.file_name"]). duration = temps HTTP complet côté API.
+requests
+| where timestamp > ago(7d)
+| where name == "POST /predict/batch"
+| extend fichier = tostring(customDimensions["dscc.file_name"])
+| where isnotempty(fichier)
+| summarize
+    duree_max_ms   = max(duration),
+    duree_moy_ms   = avg(duration),
+    appels         = count(),
+    derniere_fois  = max(timestamp)
+    by fichier
+| top 5 by duree_max_ms desc

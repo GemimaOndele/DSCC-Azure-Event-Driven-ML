@@ -1,0 +1,13 @@
+// Q1 — Inférences par heure (24 dernières heures)
+// Source : métriques personnalisées OpenTelemetry de l'API (api/main.py).
+//   inferred_rows      = clients prédits (un lot de n lignes ajoute n)
+//   inference_requests = appels HTTP de prédiction réussis (un lot = 1)
+customMetrics
+| where timestamp > ago(24h)
+| where name in ("inferred_rows", "inference_requests")
+| summarize
+    clients_predits = sumif(value, name == "inferred_rows"),
+    appels_api      = sumif(value, name == "inference_requests")
+    by heure = bin(timestamp, 1h)
+| order by heure asc
+| render columnchart

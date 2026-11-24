@@ -14,6 +14,8 @@ from azure.monitor.opentelemetry import configure_azure_monitor
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from opentelemetry import metrics, trace
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
@@ -37,6 +39,38 @@ MAX_REQUEST_BYTES = 8 * 1024 * 1024
 DECISION_THRESHOLD = 0.5
 NON_FINITE_JSON = re.compile(rb":\s*(?:-?Infinity|NaN)(?=\s*[,}\]]|\s*$)")
 LOGGER = logging.getLogger("dscc.ml_api")
+
+# --- Custom metrics (issue #10, R4) -------------------------------------------
+# OpenTelemetry instruments exported by azure-monitor-opentelemetry to the
+# Application Insights `customMetrics` table (AppMetrics in Log Analytics).
+# The proxy meter binds to the provider created by configure_azure_monitor()
+# at startup; without a connection string the calls are no-ops.
+# Attributes stay low-cardinality (endpoint, model version, error reason):
+# the file name goes to logs/spans only, never to metric dimensions.
+METER = metrics.get_meter("dscc.ml_api")
+INFERRED_ROWS = METER.create_counter(
+    "inferred_rows",
+    unit="1",
+    description="Client rows scored by the model (a batch of n rows adds n).",
+)
+INFERENCE_REQUESTS = METER.create_counter(
+    "inference_requests",
+    unit="1",
+    description="Successful prediction HTTP calls (a batch counts as one).",
+)
+INFERENCE_LATENCY = METER.create_histogram(
+    "inference_latency_ms",
+    unit="ms",
+    description="ONNX model execution time per prediction call.",
+)
+INFERENCE_ERRORS = METER.create_counter(
+    "inference_errors",
+    unit="1",
+    description="Rejected (422) or failed prediction calls, by reason.",
+)
+PREDICT_PATHS = frozenset({"/predict", "/predict/batch"})
+FILE_HEADER = "x-dscc-blob"  # sent by the worker (functions/src/api_client.py)
+MAX_FILE_NAME_LENGTH = 256
 
 YesNo = Literal["Yes", "No"]
 NoInternetService = Literal["No", "Yes", "No internet service"]
@@ -129,14 +163,30 @@ class BatchResponse(BaseModel):
     summary: BatchSummary
 
 
+def _configure_telemetry() -> bool:
+    """Enable Azure Monitor OpenTelemetry when a connection string is set.
+
+    Must run BEFORE `app = FastAPI(...)`: the distro instruments FastAPI by
+    patching the class, so an app created earlier (e.g. configuring inside
+    the lifespan) never gets the request middleware and the Application
+    Insights `requests` table stays empty.
+    """
+    connection_string = os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING")
+    if not connection_string:
+        return False
+    configure_azure_monitor(
+        connection_string=connection_string,
+        logger_name=LOGGER.name,
+    )
+    return True
+
+
+TELEMETRY_ENABLED = _configure_telemetry()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    connection_string = os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING")
-    if connection_string:
-        configure_azure_monitor(
-            connection_string=connection_string,
-            logger_name=LOGGER.name,
-        )
+    if TELEMETRY_ENABLED:
         LOGGER.info("Azure Monitor OpenTelemetry configured")
     else:
         LOGGER.warning(
@@ -174,6 +224,12 @@ app = FastAPI(
     version=API_VERSION,
     lifespan=lifespan,
 )
+if TELEMETRY_ENABLED:
+    # Explicit instrumentation: `from fastapi import FastAPI` above binds the
+    # original class before the distro patches it, so automatic FastAPI
+    # instrumentation would silently skip this app. /health is excluded to keep
+    # probe traffic out of the 0.2 GB/day Log Analytics cap.
+    FastAPIInstrumentor.instrument_app(app, excluded_urls="health")
 
 
 def _validation_safe(value: object) -> object:
@@ -195,6 +251,7 @@ async def validation_exception_handler(
 ) -> JSONResponse:
     # JSONResponse uses allow_nan=False. An unsanitised inf/nan in a validation
     # error (e.g. 1e999 decoded as inf) would turn the expected 422 into a 500.
+    _record_error(request.url.path, "validation")
     return JSONResponse(
         status_code=422, content={"detail": _validation_safe(exc.errors())}
     )
@@ -212,15 +269,18 @@ async def guard_json_body(request: Request, call_next):
     ).startswith("application/json"):
         declared_size = request.headers.get("content-length")
         if declared_size and int(declared_size) > MAX_REQUEST_BYTES:
+            _record_error(request.url.path, "too_large")
             return JSONResponse(
                 status_code=413, content={"detail": "Request body is too large"}
             )
         body = await request.body()
         if len(body) > MAX_REQUEST_BYTES:
+            _record_error(request.url.path, "too_large")
             return JSONResponse(
                 status_code=413, content={"detail": "Request body is too large"}
             )
         if NON_FINITE_JSON.search(body):
+            _record_error(request.url.path, "validation")
             return JSONResponse(
                 status_code=422,
                 content={"detail": "Non-finite JSON numbers are not allowed"},
@@ -271,12 +331,59 @@ def _prediction(probability: float, customer_id: str | None) -> BatchPrediction:
     )
 
 
-def _record_metrics(request: Request, latency_ms: float, rows: int) -> None:
-    """Count HTTP calls and the clients actually inferred (R4 monitoring)."""
+def _record_metrics(
+    request: Request, latency_ms: float, rows: int, endpoint: str
+) -> None:
+    """Count HTTP calls and the clients actually inferred (R4 monitoring).
+
+    The in-memory counters feed GET /metrics (per replica, reset at scale to
+    zero); the OpenTelemetry instruments feed Application Insights, which keeps
+    the history across replicas for KQL and alerts.
+    """
     with request.app.state.metrics_lock:
         request.app.state.metrics["inference_calls"] += 1
         request.app.state.metrics["inferred_rows"] += rows
         request.app.state.metrics["total_latency_ms"] += latency_ms
+    attributes = {"endpoint": endpoint, "model_version": MODEL_VERSION}
+    INFERENCE_REQUESTS.add(1, attributes)
+    INFERRED_ROWS.add(rows, attributes)
+    INFERENCE_LATENCY.record(latency_ms, attributes)
+
+
+def _record_error(path: str, reason: str) -> None:
+    """Count rejected/failed prediction calls; other routes are ignored."""
+    if path in PREDICT_PATHS:
+        INFERENCE_ERRORS.add(
+            1, {"endpoint": path, "reason": reason, "model_version": MODEL_VERSION}
+        )
+
+
+def _scored(
+    request: Request, rows: list[CustomerFeatures], endpoint: str
+) -> tuple[np.ndarray, float]:
+    try:
+        return _run_model(_loaded_model(request), rows)
+    except HTTPException:
+        _record_error(endpoint, "model_not_loaded")
+        raise
+    except Exception:
+        _record_error(endpoint, "model_error")
+        raise
+
+
+def _file_name(request: Request) -> str | None:
+    """Blob name sent by the worker, sanitised, attached to the request span.
+
+    It lands in requests.customDimensions["dscc.file_name"] so KQL can rank
+    the slowest files without adding a high-cardinality metric dimension.
+    """
+    raw = request.headers.get(FILE_HEADER)
+    if not raw:
+        return None
+    name = "".join(ch for ch in raw if ch.isprintable())[:MAX_FILE_NAME_LENGTH]
+    if name:
+        trace.get_current_span().set_attribute("dscc.file_name", name)
+    return name or None
 
 
 def _loaded_model(request: Request) -> onnxruntime.InferenceSession:
@@ -305,9 +412,9 @@ def version() -> dict[str, str]:
 @app.post("/predict", response_model=PredictionResponse)
 def predict(payload: CustomerFeatures, request: Request) -> PredictionResponse:
     """Unit inference, kept for backward compatibility and local worker calls."""
-    probabilities, latency_ms = _run_model(_loaded_model(request), [payload])
+    probabilities, latency_ms = _scored(request, [payload], "/predict")
     result = _prediction(probabilities[0], payload.customerID)
-    _record_metrics(request, latency_ms, rows=1)
+    _record_metrics(request, latency_ms, rows=1, endpoint="/predict")
     LOGGER.info(
         "Prediction completed",
         extra={
@@ -328,7 +435,8 @@ def predict(payload: CustomerFeatures, request: Request) -> PredictionResponse:
 @app.post("/predict/batch", response_model=BatchResponse)
 def predict_batch(payload: BatchRequest, request: Request) -> BatchResponse:
     """Batch inference for a multi-client CSV (contract #14, option A)."""
-    probabilities, latency_ms = _run_model(_loaded_model(request), payload.rows)
+    file_name = _file_name(request)
+    probabilities, latency_ms = _scored(request, payload.rows, "/predict/batch")
     predictions = [
         _prediction(probabilities[index], row.customerID)
         for index, row in enumerate(payload.rows)
@@ -340,10 +448,13 @@ def predict_batch(payload: BatchRequest, request: Request) -> BatchResponse:
         threshold=DECISION_THRESHOLD,
         model_version=MODEL_VERSION,
     )
-    _record_metrics(request, latency_ms, rows=len(payload.rows))
+    _record_metrics(
+        request, latency_ms, rows=len(payload.rows), endpoint="/predict/batch"
+    )
     LOGGER.info(
         "Batch prediction completed",
         extra={
+            "file_name": file_name or "",
             "rows": summary.rows,
             "at_risk": summary.atRisk,
             "inference_latency_ms": latency_ms,

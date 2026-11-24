@@ -1,0 +1,9 @@
+// Requête de l'alerte (règle de recherche dans les journaux, toutes les 15 min,
+// fenêtre de 15 min). Elle ne renvoie une ligne que si le seuil est dépassé :
+// la règle se déclenche quand le nombre de lignes est > 0.
+requests
+| where name in ("POST /predict", "POST /predict/batch")
+| summarize total = count(), echecs = countif(toint(resultCode) >= 400),
+            p95_ms = percentile(duration, 95)
+| extend taux_erreur = todouble(echecs) / total
+| where total >= 10 and (taux_erreur > 0.2 or p95_ms > 1000)
