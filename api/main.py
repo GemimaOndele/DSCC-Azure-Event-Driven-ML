@@ -1,16 +1,19 @@
 import logging
+import math
 import os
+import re
 from contextlib import asynccontextmanager
 from pathlib import Path
 from threading import Lock
 from time import perf_counter
-from typing import AsyncGenerator, Literal
+from typing import Annotated, AsyncGenerator, Literal
 
 import numpy as np
 import onnxruntime
 from azure.monitor.opentelemetry import configure_azure_monitor
 from fastapi import FastAPI, HTTPException, Request
-from pydantic import BaseModel, ConfigDict
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 API_VERSION = os.getenv("API_VERSION", "1.0.0")
@@ -25,33 +28,67 @@ MODEL_PATH = Path(
         ),
     )
 )
+# Contract #14: a 1 MiB CSV cannot hold more rows than this; the cap protects
+# the API from unbounded batches coming from the dispatcher/worker.
+MAX_BATCH_ROWS = 10_000
+MAX_STRING_LENGTH = 64
+MAX_REQUEST_BYTES = 8 * 1024 * 1024
+DECISION_THRESHOLD = 0.5
+NON_FINITE_JSON = re.compile(rb":\s*(?:-?Infinity|NaN)(?=\s*[,}\]]|\s*$)")
 LOGGER = logging.getLogger("dscc.ml_api")
+
+YesNo = Literal["Yes", "No"]
+NoInternetService = Literal["No", "Yes", "No internet service"]
 
 
 class CustomerFeatures(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    """One client row: customerID is an identifier, the other 21 fields are model inputs."""
 
-    gender: str
-    SeniorCitizen: int
-    Partner: str
-    Dependents: str
-    tenure: int
-    PhoneService: str
-    MultipleLines: str
-    InternetService: str
-    OnlineSecurity: str
-    OnlineBackup: str
-    DeviceProtection: str
-    TechSupport: str
-    StreamingTV: str
-    StreamingMovies: str
-    Contract: str
-    PaperlessBilling: str
-    PaymentMethod: str
-    MonthlyCharges: float
-    TotalCharges: float | None = None
-    numAdminTickets: int
-    numTechTickets: int
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    customerID: Annotated[
+        str, Field(min_length=1, max_length=MAX_STRING_LENGTH, pattern=r"^[A-Za-z0-9._-]+$")
+    ] | None = None
+    gender: Literal["Female", "Male"]
+    SeniorCitizen: Annotated[int, Field(ge=0, le=1)]
+    Partner: YesNo
+    Dependents: YesNo
+    tenure: Annotated[int, Field(ge=0, le=120)]
+    PhoneService: YesNo
+    MultipleLines: Literal["No", "Yes", "No phone service"]
+    InternetService: Literal["DSL", "Fiber optic", "No"]
+    OnlineSecurity: NoInternetService
+    OnlineBackup: NoInternetService
+    DeviceProtection: NoInternetService
+    TechSupport: NoInternetService
+    StreamingTV: NoInternetService
+    StreamingMovies: NoInternetService
+    Contract: Literal["Month-to-month", "One year", "Two year"]
+    PaperlessBilling: YesNo
+    PaymentMethod: Literal[
+        "Bank transfer (automatic)",
+        "Credit card (automatic)",
+        "Electronic check",
+        "Mailed check",
+    ]
+    MonthlyCharges: Annotated[float, Field(ge=0, le=10_000)]
+    TotalCharges: Annotated[float | None, Field(ge=0, le=1_000_000)] = None
+    numAdminTickets: Annotated[int, Field(ge=0, le=10_000)]
+    numTechTickets: Annotated[int, Field(ge=0, le=10_000)]
+
+    @field_validator("MonthlyCharges", "TotalCharges")
+    @classmethod
+    def finite_numbers(cls, value: float | None) -> float | None:
+        if value is not None and not math.isfinite(value):
+            raise ValueError("Numeric fields must be finite")
+        return value
+
+    @model_validator(mode="after")
+    def no_control_characters(self) -> "CustomerFeatures":
+        for name, value in self.model_dump().items():
+            if isinstance(value, str) and any(ord(character) < 32 for character in value):
+                raise ValueError(f"{name} contains control characters")
+        return self
 
 
 class PredictionResponse(BaseModel):
@@ -59,6 +96,36 @@ class PredictionResponse(BaseModel):
     churn_probability: float
     confidence: float
     model_version: str
+
+
+class BatchPrediction(BaseModel):
+    customerID: str | None = None
+    prediction: Literal["No", "Yes"]
+    label: Literal[0, 1]
+    churn_probability: float
+    confidence: float
+
+
+class BatchSummary(BaseModel):
+    rows: int
+    atRisk: int
+    avgChurnProbability: float
+    threshold: float
+    model_version: str
+
+
+class BatchRequest(BaseModel):
+    """Contract #14 multi-client payload: one CSV row per item in `rows`."""
+
+    model_config = ConfigDict(extra="forbid")
+    rows: list[CustomerFeatures] = Field(min_length=1, max_length=MAX_BATCH_ROWS)
+
+
+class BatchResponse(BaseModel):
+    model_version: str
+    latency_ms: float
+    predictions: list[BatchPrediction]
+    summary: BatchSummary
 
 
 @asynccontextmanager
@@ -104,6 +171,90 @@ app = FastAPI(
 )
 
 
+@app.middleware("http")
+async def guard_json_body(request: Request, call_next):
+    """Reject oversized bodies and non-finite JSON numbers before validation.
+
+    Pydantic would otherwise echo NaN/Infinity in its 422 payload, which is not
+    valid JSON and turns the rejection into a 500.
+    """
+    if request.method in {"POST", "PUT", "PATCH"} and request.headers.get(
+        "content-type", ""
+    ).startswith("application/json"):
+        declared_size = request.headers.get("content-length")
+        if declared_size and int(declared_size) > MAX_REQUEST_BYTES:
+            return JSONResponse(
+                status_code=413, content={"detail": "Request body is too large"}
+            )
+        body = await request.body()
+        if len(body) > MAX_REQUEST_BYTES:
+            return JSONResponse(
+                status_code=413, content={"detail": "Request body is too large"}
+            )
+        if NON_FINITE_JSON.search(body):
+            return JSONResponse(
+                status_code=422,
+                content={"detail": "Non-finite JSON numbers are not allowed"},
+            )
+    return await call_next(request)
+
+
+def _run_model(
+    model: onnxruntime.InferenceSession, rows: list[CustomerFeatures]
+) -> tuple[np.ndarray, float]:
+    values_by_row = [row.model_dump() for row in rows]
+    inputs = {
+        model_input.name: np.asarray(
+            [
+                [np.nan if row[model_input.name] is None else row[model_input.name]]
+                for row in values_by_row
+            ],
+            dtype=object if model_input.type == "tensor(string)" else np.float32,
+        )
+        for model_input in model.get_inputs()
+    }
+
+    started = perf_counter()
+    outputs = model.run(None, inputs)
+    latency_ms = (perf_counter() - started) * 1000
+    probability_outputs = [
+        output
+        for output in outputs
+        if getattr(output, "ndim", 0) == 2 and output.shape[1] == 2
+    ]
+    if len(probability_outputs) != 1:
+        raise RuntimeError("Could not identify the ONNX class-probability output.")
+    probabilities = probability_outputs[0][:, 1]
+    if probabilities.shape[0] != len(rows):
+        raise RuntimeError("ONNX output does not contain one probability per client.")
+    return probabilities, latency_ms
+
+
+def _prediction(probability: float, customer_id: str | None) -> BatchPrediction:
+    prediction = "Yes" if probability >= DECISION_THRESHOLD else "No"
+    confidence = probability if prediction == "Yes" else 1.0 - probability
+    return BatchPrediction(
+        customerID=customer_id,
+        prediction=prediction,
+        label=int(prediction == "Yes"),
+        churn_probability=float(probability),
+        confidence=float(confidence),
+    )
+
+
+def _record_metrics(request: Request, latency_ms: float) -> None:
+    with request.app.state.metrics_lock:
+        request.app.state.metrics["inference_calls"] += 1
+        request.app.state.metrics["total_latency_ms"] += latency_ms
+
+
+def _loaded_model(request: Request) -> onnxruntime.InferenceSession:
+    model = getattr(request.app.state, "model", None)
+    if model is None:
+        raise HTTPException(status_code=503, detail="Model is not loaded")
+    return model
+
+
 @app.get("/health")
 def health(request: Request) -> dict[str, str | float | bool]:
     if not hasattr(request.app.state, "model"):
@@ -122,55 +273,57 @@ def version() -> dict[str, str]:
 
 @app.post("/predict", response_model=PredictionResponse)
 def predict(payload: CustomerFeatures, request: Request) -> PredictionResponse:
-    model = getattr(request.app.state, "model", None)
-    if model is None:
-        raise HTTPException(status_code=503, detail="Model is not loaded")
-
-    values = payload.model_dump()
-    inputs = {
-        model_input.name: np.asarray(
-            [[values[model_input.name]]]
-            if model_input.type == "tensor(string)"
-            else [[np.nan if values[model_input.name] is None else values[model_input.name]]],
-            dtype=object if model_input.type == "tensor(string)" else np.float32,
-        )
-        for model_input in model.get_inputs()
-    }
-
-    started = perf_counter()
-    outputs = model.run(None, inputs)
-    probability_outputs = [
-        output
-        for output in outputs
-        if getattr(output, "ndim", 0) == 2 and output.shape[1] == 2
-    ]
-    if len(probability_outputs) != 1:
-        raise RuntimeError("Could not identify the ONNX class-probability output.")
-    churn_probability = float(probability_outputs[0][0, 1])
-    prediction = "Yes" if churn_probability >= 0.5 else "No"
-    latency_ms = (perf_counter() - started) * 1000
-
-    with request.app.state.metrics_lock:
-        request.app.state.metrics["inference_calls"] += 1
-        request.app.state.metrics["total_latency_ms"] += latency_ms
-
-    confidence = (
-        churn_probability if prediction == "Yes" else 1.0 - churn_probability
-    )
+    """Unit inference, kept for backward compatibility and local worker calls."""
+    probabilities, latency_ms = _run_model(_loaded_model(request), [payload])
+    result = _prediction(probabilities[0], payload.customerID)
+    _record_metrics(request, latency_ms)
     LOGGER.info(
         "Prediction completed",
         extra={
-            "prediction": prediction,
-            "churn_probability": churn_probability,
+            "prediction": result.prediction,
+            "churn_probability": result.churn_probability,
             "inference_latency_ms": latency_ms,
             "model_version": MODEL_VERSION,
         },
     )
     return PredictionResponse(
-        prediction=prediction,
-        churn_probability=churn_probability,
-        confidence=confidence,
+        prediction=result.prediction,
+        churn_probability=result.churn_probability,
+        confidence=result.confidence,
         model_version=MODEL_VERSION,
+    )
+
+
+@app.post("/predict/batch", response_model=BatchResponse)
+def predict_batch(payload: BatchRequest, request: Request) -> BatchResponse:
+    """Batch inference for a multi-client CSV (contract #14, option A)."""
+    probabilities, latency_ms = _run_model(_loaded_model(request), payload.rows)
+    predictions = [
+        _prediction(probabilities[index], row.customerID)
+        for index, row in enumerate(payload.rows)
+    ]
+    summary = BatchSummary(
+        rows=len(predictions),
+        atRisk=sum(prediction.label for prediction in predictions),
+        avgChurnProbability=float(np.mean(probabilities)),
+        threshold=DECISION_THRESHOLD,
+        model_version=MODEL_VERSION,
+    )
+    _record_metrics(request, latency_ms)
+    LOGGER.info(
+        "Batch prediction completed",
+        extra={
+            "rows": summary.rows,
+            "at_risk": summary.atRisk,
+            "inference_latency_ms": latency_ms,
+            "model_version": MODEL_VERSION,
+        },
+    )
+    return BatchResponse(
+        model_version=MODEL_VERSION,
+        latency_ms=latency_ms,
+        predictions=predictions,
+        summary=summary,
     )
 
 
