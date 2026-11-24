@@ -56,7 +56,7 @@ Batch request — the contract #14 option A chosen for the dispatcher/worker. Ea
 }
 ```
 
-`GET /metrics` counts **HTTP inference requests** (one batch counts as one call) and reports average ONNX latency. Input hardening: unknown/extra fields and unknown categories are rejected with `422`, numeric ranges and finite values are enforced, blank strings and control characters are rejected, and batches are capped at `MAX_BATCH_ROWS = 10000` (larger than a 1 MiB CSV can hold per contract #14).
+`GET /metrics` reports `inference_calls` (**HTTP inference requests**, one batch = one call), `inferred_rows` (**clients actually predicted**, `len(rows)` per batch; name to be confirmed with Omar for KQL/alerts) and average ONNX latency. Input hardening: unknown/extra fields and unknown categories are rejected with `422`, numeric ranges and finite values are enforced, blank strings and control characters are rejected, and batches are capped at `MAX_BATCH_ROWS = 10000` (larger than a 1 MiB CSV can hold per contract #14).
 
 ## Tests and CI
 
