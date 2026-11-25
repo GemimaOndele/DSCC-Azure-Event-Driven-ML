@@ -10,7 +10,7 @@
 
 Build an event-driven Telecom Customer Churn prediction pipeline on Microsoft Azure, with file validation, queue-based decoupling, a containerized Machine Learning inference API, persisted results, a dashboard, observability, CI/CD, managed identities and a budget cap.
 
-**Status (24 Nov 2026):** GitHub Projects is configured; training and FastAPI code have been submitted in **PR #18 and PR #17** but are **not yet merged**. The Azure Functions pipeline and cloud deployment have not been verified. This section describes the *target* architecture; do not confuse proposed components with deployed services.
+**Status (25 Nov 2026):** GitHub Projects is configured; training and FastAPI code have been submitted in **PR #18 and PR #17** but are **not yet merged**. The Azure Functions pipeline and cloud deployment have not been verified. This section describes the *target* architecture; do not confuse proposed components with deployed services.
 
 ## Target architecture
 
@@ -24,7 +24,7 @@ Client CSV → Blob Storage (input/)
         └── valid   → Storage Queue inference-requests
                               ↓
                        Azure Function worker
-                              ↓ POST /predict
+                              ↓ POST /predict/batch
                     FastAPI + ONNX Runtime (proposed model)
                     Azure Container Apps
                               ↓
@@ -41,7 +41,7 @@ Cross-cutting: Application Insights and OpenTelemetry, KQL and alerting, GitHub 
 
 - Open dataset, at most **50 MB**; cite license.
 - Reproducible CPU-based training, two metrics and a naive baseline; versioned model smaller than **100 MB**, inference below **1 s**.
-- FastAPI (Python 3.12) endpoints `/health`, `/version`, `/predict`, `/metrics`; Pydantic validation, three pytest cases and Docker image under **500 MB**.
+- FastAPI (Python 3.12) endpoints `/health`, `/version`, `/predict`, `/predict/batch`, `/metrics`; Pydantic validation, three pytest cases and Docker image under **500 MB**.
 - Python 3.12 Azure Functions app with dispatcher, worker, `recent`; five retries and a poison queue, idempotency on Blob name + ETag.
 - Azure budget **≤ $25** on one student's integration subscription; aim under **$5**.
 - **No virtual machine, GPU or AKS. No secrets in this repository.**
@@ -74,7 +74,7 @@ These folders will be added when the corresponding work begins, rather than popu
 
 ## Shared Azure collaboration
 
-Gémima and Aminata are comparing their Azure for Students credits and regional restrictions to select **one** integration subscription. Aminata's first task is the sharing/access guide; other members may develop and test locally with Docker/Azurite/Azure Functions Core Tools. Azure deployment will use GitHub Actions OIDC; RBAC Contributor access to the resource group can be added only if the school's Microsoft Entra tenant allows it. **No paid Azure resource has been created by the GitHub setup work.**
+Gémima and Aminata are comparing their Azure for Students credits and regional restrictions to select **one** integration subscription. The sharing/access guide was merged in PR #15; subscription and region selection remain pending. other members may develop and test locally with Docker/Azurite/Azure Functions Core Tools. Azure deployment will use GitHub Actions OIDC; RBAC Contributor access to the resource group can be added only if the school's Microsoft Entra tenant allows it. **No paid Azure resource has been created by the GitHub setup work.**
 
 ## Deliverables
 
@@ -84,4 +84,4 @@ Public repository, README and reproducible code, a PDF report **with screenshots
 
 ML/API (4), event-driven pipeline (4), persistence/dashboard (2), observability (3), CI/CD/security (3), cost/student restrictions (2), documentation/demo/defense (2) = **20 points** (plus optional bonuses only after core completion).
 
-_Last planning update: 24 November 2026. Open implementation PRs: [model #18](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/pull/18), [API #17](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/pull/17). The model currently uses 21 input features and the API serves single-customer requests; the cross-component contract is awaiting team review._
+_Last planning update: 25 November 2026. Open implementation PRs: [model #18](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/pull/18), [API #17](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/pull/17). The model currently uses 21 input features and the API supports single-customer and batch requests; the 19/21 feature decision and dataset permission remain open. PR #14 has R4 feedback incorporated; #19 dashboard, #20 observability and #21 pipeline are open. Reconcile this README with #17 and #18 during integration._
