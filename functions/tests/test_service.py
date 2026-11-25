@@ -162,3 +162,24 @@ def test_recent_limits_and_cors_origin() -> None:
     assert denied is None
     _, anonymous = recent(results=results, settings=SETTINGS, request_origin=None)
     assert anonymous is None
+
+
+def test_worker_rejects_invalid_csv_without_calling_api() -> None:
+    blobs = InMemoryBlobStore({"batch_01.csv": b"invalid,header\n1,2\n"})
+    results = InMemoryResultStore()
+    class NeverApi:
+        def predict_batch(self, *args, **kwargs):
+            pytest.fail("Invalid CSV must not reach inference")
+    outcome = process(message(), settings=SETTINGS, blobs=blobs, api=NeverApi(), results=results)
+    assert outcome["status"] == "rejected"
+    assert len(blobs.containers["rejected"]) == 1
+    assert not results.items
+    assert not blobs.containers["output"]
+
+
+def test_dispatch_accepts_event_grid_content_length() -> None:
+    event = {k: v for k, v in EVENT.items() if k != "size"}
+    event["contentLength"] = FIXTURE.stat().st_size
+    queue = FakeQueue()
+    assert dispatch(event, settings=SETTINGS, blobs=blob_store(), queue=queue)["status"] == "queued"
+    assert len(queue.messages) == 1
