@@ -51,7 +51,7 @@ def dispatch(
     try:
         blob_name = blob_name_from_event(event_data)
         validate_blob_name(blob_name)
-        size = int(event_data.get("size", 0))
+        size = int(event_data.get("contentLength", event_data.get("size", 0)))
         validate_size(size, settings.max_csv_bytes)
         data = blobs.download(blob_name)
         if len(data) != size and size:
