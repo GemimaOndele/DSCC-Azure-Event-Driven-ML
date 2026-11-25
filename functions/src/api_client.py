@@ -79,10 +79,8 @@ class InferenceClient:
                 raise TransientInferenceError("API response has no predictions list")
             return payload
 
-        # Never echo the whole body: it may hold client data. Keep a short,
-        # readable reason for the rejected/ file and the logs.
-        detail = response.text[:300]
-        message = f"API returned HTTP {response.status_code}: {detail}"
+        # Do not persist response bodies: validation errors can echo client data.
+        message = f"API returned HTTP {response.status_code}"
         if response.status_code in PERMANENT_STATUSES:
             raise PermanentInferenceError(message, status_code=response.status_code)
         if response.status_code in TRANSIENT_STATUSES:
