@@ -1,6 +1,6 @@
 # DSCC — Technical Contract (DRAFT)
 
-> **Status: PROPOSED — awaiting review by Gémima, Aminata and Elias.**
+> **Status: PROPOSED — Omar approved R4 on a20b1ba; revised contract awaiting renewed review by Omar, Aminata and Elias.**
 > This document consolidates the **Contrat** worksheet of `suivi_projet_groupe2.xlsx` and the mandatory interfaces in `PROJET_FR.pdf` (§4). It is *not* evidence of deployed services or finished code.
 > Changes to this contract must be communicated to the team and submitted via pull request.
 
@@ -48,6 +48,8 @@ Storage queue: `inference-requests`. Its poison queue is `inference-requests-poi
 - `POST /predict/batch`: **implemented by PR #17** with `{"rows":[...]}` (one row per client); returns `predictions` per client and a global `summary`. This is the **proposed canonical worker route** (option A from Elias, supported in Aminata's review), pending team sign-off and merge.
 - `GET /metrics`: HTTP request count `inference_calls`, count of predicted client rows `inferred_rows` and `average_latency_ms`. Omar (R4) confirmed `inferred_rows` for KQL/alerts in his #17 review; this endpoint is currently submitted in PR #17.
 
+- Worker correlation headers: `X-DSCC-Blob` and `X-DSCC-ETag`. PR #20 uses the blob name in the request span as `dscc.file_name`; never use blob names or ETags as metric dimensions.
+
 ### `POST /predict/batch` request (shape implemented in PR #17; illustrative incomplete row)
 
 ```json
@@ -90,7 +92,7 @@ Example **metadata** from the Excel:
 
 ```json
 {
-  "id": "<blobName>-<etag>",
+  "id": "<sanitized-stem>-<first16-sha256-hex>",
   "fileName": "batch_01.csv",
   "timestamp": "2026-11-20T10:00:05Z",
   "rows": 50,
@@ -109,7 +111,8 @@ Example **metadata** from the Excel:
 - `GET /api/recent` returns the 20 latest results (JSON), with CORS restricted to the static site's origin.
 - Static HTML/JS on Blob Storage `$web`, with at least one Chart.js visualization and auto-refresh every **30 seconds**.
 - OpenTelemetry through `azure-monitor-opentelemetry` for the API; explicit workspace-based App Insights and Log Analytics capped at **0.2 GB/day**.
-- At least two custom metrics: inference count and model latency; three KQL queries and one triggered alert.
+- Custom instruments proposed in #20: `inferred_rows` (counter), `inference_latency_ms` (histogram), `inference_requests` (successful prediction calls), and `inference_errors` (reason: `validation`, `too_large`, `model_error`, `model_not_loaded`). Dimensions: `endpoint`, `model_version`, and `reason` only for errors. Three KQL queries and one triggered alert remain required.
+- Configure Azure Monitor before creating FastAPI or explicitly instrument the app; #20 implements explicit instrumentation and excludes `/health` to limit probe ingestion. Verify exported spans and metrics before acceptance.
 
 ## 7. Environment, security and cost constraints
 
@@ -136,6 +139,7 @@ Proposed shared variable names in the Excel: `MODEL_API_URL`, `COSMOS_ENDPOINT`,
 
 ## 9. Approval checklist
 
+- [ ] Omar revalidates R4 after these changes (previous approval on `a20b1ba`).
 - [ ] Gémima verifies file/queue/DB naming, object schema and status conventions.
 - [ ] Elias confirms the **21 input features (versus previous 19)**, types, optional `TotalCharges`, ONNX artifact and exact model response; add a canonical feature schema if chosen.
 - [ ] Aminata confirms the worker's use of `POST /predict/batch`, retry/error policy, rejection, timeout and idempotency.
@@ -154,5 +158,5 @@ These values reflect the current `feat/event-pipeline` implementation, not a new
 - Rejection JSON currently implemented: `{"blobName":"batch_01.csv","reason":"validation error","status":"rejected"}`; reason limited to 2,000 characters. Confirm original-file retention and avoid sensitive values in logs.
 - Cosmos ID currently implemented: sanitized filename stem (max 40 characters), hyphen, first 16 hex characters of SHA-256 of UTF-8 `blobName|etag`. Partition key `/fileName`. Verify conditional reads against the event ETag, concurrent duplicate delivery and distinct output versions; the digest alone does not guarantee exactly-once inference.
 - R1: 21 features and threshold 0.5 remain provisional for the academic demo; the two ticket counters have no demonstrated pre-churn availability. Omar's ablation is reported in #18. Do not freeze the schema or claim production validity until the team chooses 21 or 19 features and confirms dataset usage rights. If 19, retrain and update API, worker, ONNX, tests and metrics together.
-- Integration: Omar identified sequential merge conflicts in `README.md` and `model/features.json` between #17/#18. Resolve on a reviewed branch and rerun both test suites and Docker build; do not merge either in isolation until the dataset decision is recorded.
+- Integration: Omar identified sequential merge conflicts in `README.md` and `model/features.json` between #17/#18. Resolve on a reviewed branch and rerun both test suites and Docker build; Omar proposes merging #17 first, then rebasing #18 and rerunning both suites and Docker build. This order requires explicit team validation; #17 must not freeze an incompatible schema or imply dataset permission. #18 remains gated on dataset rights and the 19/21 decision. Also reconcile README.md between #14/#17 and the union of .gitignore rules between #14/#18 before merging.
 - R4: Omar confirmed `inferred_rows` for KQL; #19 dashboard consumes `{count,limit,results}` from `/api/recent`. Real Azure evidence remains pending.
