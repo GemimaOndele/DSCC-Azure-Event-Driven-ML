@@ -92,7 +92,8 @@ resource federation 'Microsoft.ManagedIdentity/userAssignedIdentities/federatedI
 var blobOwner = 'b7e6dc6d-f1e8-4753-8033-0f276bb0955b'
 var queueContributor = '974c5e8b-45b9-4653-ba55-5f855dd0fb88'
 var tableContributor = '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3'
-resource storageRoles 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for role in [blobOwner, queueContributor, tableContributor]: {
+var requiredStorageRoles = resultBackend == 'table' ? [blobOwner, queueContributor, tableContributor] : [blobOwner, queueContributor]
+resource storageRoles 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for role in requiredStorageRoles: {
   name: guid(storage.id, runtimeIdentity.id, role)
   scope: storage
   properties: {
