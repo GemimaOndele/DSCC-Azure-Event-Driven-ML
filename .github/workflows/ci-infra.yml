@@ -1,0 +1,33 @@
+name: DSCC infrastructure validation (no Azure login)
+on:
+  pull_request:
+    paths:
+      - 'infra/**'
+      - '.github/workflows/ci-infra.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile Bicep templates without Azure credentials
+        run: |
+          set -euo pipefail
+          az bicep install
+          az bicep build --file infra/base.bicep --outfile "$RUNNER_TEMP/base.json"
+          az bicep build --file infra/apps.bicep --outfile "$RUNNER_TEMP/apps.json"
+      - name: Check shell syntax
+        run: |
+          set -euo pipefail
+          bash -n infra/preflight-readonly.sh
+          bash -n infra/bootstrap.sh
+      - name: Check guarded default
+        run: |
+          bash infra/bootstrap.sh --help
+          if bash infra/bootstrap.sh apply-base; then
+            echo "Unsafe: missing approval allowed deployment" >&2
+            exit 1
+          fi
