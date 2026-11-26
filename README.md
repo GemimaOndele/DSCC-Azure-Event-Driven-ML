@@ -18,6 +18,7 @@ py -3.12 model\train.py
 - Stratified 80/20 split, fixed seed `42`, logistic regression with `class_weight="balanced"`, decision threshold `0.5`.
 - Metrics, baseline comparison and reproducibility evidence are produced in `model/metrics.json`; the protocol is described in the PR #18 evidence (`model/TRAINING_EVIDENCE.md` on `feat/ml-training`). The held-out split is generated locally in `model/test_split.csv` and is **not committed**.
 - Dataset provenance/licence: the DSCC case workbook is **not redistributed**; `model/prepare_data.py` fetches it from its public source with a pinned SHA-256. The 21 base columns come from IBM Telco Customer Churn (Apache-2.0); the two ticket counters are supplied by the case material. Details and redistribution terms: `model/DATASET.md` on `feat/ml-training`. No secret or real personal data.
+- The 19 vs 21 feature decision is quantified (not decided) in `model/FEATURE_RISK_ANALYSIS.md` on `feat/ml-training`: same seed/split, 21 features AUC `0,9273` / F1 `0,7328`, 19 features AUC `0,8413` / F1 `0,6136`. The shared ONNX artefact remains unchanged.
 
 ## Inference API
 
@@ -66,7 +67,7 @@ py -3.12 -m pytest api\tests -q
 py -3.12 -m pytest model\tests -q   # on feat/ml-training
 ```
 
-Pull requests run the workflows `.github/workflows/ci-ml-api.yml` (pytest + Docker build) and `.github/workflows/ci-ml-training.yml` (pytest + reproducible retraining). Local results and the Docker image size are recorded in the PR descriptions.
+Pull requests use the single workflow `.github/workflows/ci-ml.yml`: job `training-tests` (ruff + reproducibility tests) on `feat/ml-training`, and job `api-tests` (ruff, pytest, Docker build, <500 MB image gate) on `feat/ml-api`. GHCR publication is handled by `.github/workflows/publish-api.yml` on `feat/ml-api`. Evidence: [training CI run 45881162117](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/45881162117) and [publish run 45880950088](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/45880950088).
 
 ## Container
 
@@ -76,6 +77,6 @@ Build the multi-stage image from the repository root:
 docker build -f api\Dockerfile -t churn-ml-api:1.0.0 .
 ```
 
-The container runs as an unprivileged user and loads `/app/model/model-1.0.0.onnx`. Publishing the image to GHCR is tracked by issue #8 and is **not** included in these PRs; issue #5 must not be closed before that proof exists.
+The container runs as an unprivileged user and loads `/app/model/model-1.0.0.onnx`. It is published to GHCR as `ghcr.io/gemimaondele/dscc-azure-event-driven-ml/churn-api:1.0.0` and `:sha-6fb916d19230cdd29fccffccdf3722704f1f8b25` (digest `sha256:7932660bde49aeeaffad67fd58f5609a80ab123b11b632d663a0f88adab3b3f8`) by [run 45880950088](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/45880950088). This proves **publication only**: Azure Container Apps deployment, `curl` from the Internet and scale-to-zero remain pending.
 
 Set `APPLICATIONINSIGHTS_CONNECTION_STRING` to enable Azure Monitor OpenTelemetry; without it, telemetry is disabled and the API still runs. Other optional variables: `API_VERSION`, `MODEL_VERSION`, `MODEL_PATH`.
