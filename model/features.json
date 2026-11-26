@@ -1,6 +1,6 @@
 {
   "model_version": "1.0.0",
-  "source_dataset": "DSCC case workbook fetched by model/prepare_data.py (not redistributed) / sheet '01 Churn-Dataset'",
+  "source_dataset": "DSCC case workbook (not redistributed in the current tree; download/use permission pending) / sheet '01 Churn-Dataset'",
   "identifier": "customerID",
   "target": "Churn",
   "positive_label": "Yes",
@@ -33,7 +33,7 @@
   ],
   "notes": [
     "customerID identifies the client and is never a model input; Churn is the target and is never sent to the API.",
-    "This file is the single source of truth shared by PR #17 (api/main.py) and PR #18 (model/train.py) and resolves the 19 vs 21 feature discrepancy in contract #14.",
+    "This file is the single source of truth shared by PR #17 (api/main.py) and PR #18 (model/train.py) and describes the current 21-feature artifact; the final 19 vs 21 feature decision in contract #14 remains pending.",
     "The decision threshold 0.5 was kept from contract #14 and validated on the held-out 20% split (see model/metrics.json and model/TRAINING_EVIDENCE.md on feat/ml-training)."
   ]
 }
