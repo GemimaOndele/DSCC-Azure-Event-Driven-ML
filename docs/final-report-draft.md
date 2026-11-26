@@ -98,7 +98,7 @@ POST /predict/batch, GET /metrics. The batch API consumes {"rows":[...]} and ret
 predictions, summary, model_version and latency_ms. Strict validation rejects invalid
 features and non-finite numeric values. HTTP 422 is a permanent input error;
 transient network/429/5xx failures are retried by the worker.
-Evidence: #17, commit 69cf39c, 15 API tests, Ruff and Docker build verified in run 45881702134. R1 branch GHCR publication succeeded in run 45880950088 for earlier SHA 6fb916d (tags 1.0.0 and sha-6fb916d19230cdd29fccffccdf3722704f1f8b25, digest sha256:7932660bde49aeeaffad67fd58f5609a80ab123b11b632d663a0f88adab3b3f8). This does not establish final integrated publication, artifact rights, package visibility or Azure deployment.
+Evidence: #17, current head 5886584, run 45883545674: 15 API tests, Ruff, Docker build and the <500 MB image gate. The GHCR workflow on #17 is now manual and opt-in, and publishes only `preview-<commit-sha>`; no new publication followed that change. The historical branch publication run 45880950088 (SHA 6fb916d, tags 1.0.0 and sha-6fb916d19230cdd29fccffccdf3722704f1f8b25, digest sha256:7932660bde49aeeaffad67fd58f5609a80ab123b11b632d663a0f88adab3b3f8) remains branch proof only. It establishes neither final integrated release, artifact rights, package visibility nor Azure deployment.
 
 ## 6. Pipeline and distributed systems
 
@@ -114,7 +114,7 @@ GitHub Actions run 45878414101, job 140111279553, 61 offline tests passed; after
 These tests use in-memory adapters and HTTP mocks; they do not prove real Azure
 SDK behavior or end-to-end cloud operation. Independent integration preview #22,
 run 45878841099, verified 2 tests passed with the real ONNX API and synthetic inputs,
-using pinned API 5388f1c and pipeline 192e4c0 without merging main. The refreshed preview at #22 886ee85 against API 69cf39c and pipeline 503280a again passed both tests (run 45882194925).
+using pinned API 5388f1c and pipeline 192e4c0 without merging main. The refreshed preview at #22 886ee85 against API 69cf39c and pipeline 503280a again passed both tests (run 45882194925). The latest approved QA preview at #22 65c11e9 pinned API 5886584 and pipeline 503280a and passed 2 real ONNX plus 3 isolated Azurite SDK tests (run 45884397529), still without merging branches or touching Azure.
 
 ## 7. Infrastructure, security and CI/CD
 
@@ -148,7 +148,7 @@ No customer values should be written to metrics labels or screenshots.
 | API PR #17 CI | Verified 15 tests, Ruff and Docker build |
 | Training PR #18 CI | Verified 8 tests and Ruff; dataset rights/feature decision outstanding |
 | Pipeline PR #21 CI | Verified 70 offline tests and Ruff passed |
-| Integrated real-ONNX pipeline | Refreshed preview: 2 passed, 2 warnings, run 45882194925; pinned API 69cf39c and pipeline 503280a; no Azure |
+| Integrated real-ONNX pipeline | Latest approved preview: 2 ONNX + 3 Azurite tests, run 45884397529; pinned API 5886584 and pipeline 503280a; earlier ONNX-only refresh in run 45882194925; no Azure |
 | Local Azure SDK integration (Azurite) | Verified 3 tests, run 45883033290; Blob/Queue/Table, not Cosmos or Functions host |
 | Git pairwise integration rehearsal | Refreshed 12 pairs: 3 conflicts, 9 clean (45884397543), down from 5 conflicts |
 | Sequential integrated preview | 10 pinned PRs, 103 tests (15 API + 70 pipeline + 2 ONNX + 16 dashboard), Ruff and mocked R4 guards passed (45884397493) |

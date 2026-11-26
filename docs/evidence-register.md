@@ -46,7 +46,9 @@ Credit sufficiency for both student subscriptions is confirmed by the coordinato
 | Contributor | Proof | Result |
 |---|---|---|
 | Gémima / coordination | #14 8671309 | Move overview to docs; eliminate root README change |
-| Elias | #17 5886584, run 45883553318 | Preview-only manual GHCR workflow; no new publication |
+| Elias | #17 5886584, runs 45883545674 and 45883553318 | 15 API tests, Ruff, Docker and <500 MB gate green; preview-only manual GHCR workflow; no new publication |
+| Elias | #14 a281fb8 | R1 contract validation; repaired duplicated document and `customerID` regex; 19/21 and rights still pending |
+| Elias | #22 65c11e9 review | Approved offline preview and acceptance plan; Azure E01–E11 remain unexecuted |
 | Gémima / R4 support | #19 2f57b64, run 45884267755 | 16 Node tests passed |
 | Gémima / R4 support | #20 b81277f, run 45884243968 | Mocked command guards, 15 API tests (overlap R1), Ruff and Docker passed |
 | Gémima / QA | #22 65c11e9, run 45884397543 | 3 pairwise conflicts, 9 clean |

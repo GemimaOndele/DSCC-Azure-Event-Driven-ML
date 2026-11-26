@@ -6,7 +6,7 @@ team approval pending. No claim of a completed Azure demo before evidence.
 |---|---|---|
 | 0:00–0:40 | 1. Problem and goals — Gémima | Telecom attrition, event-driven batch scoring |
 | 0:40–1:40 | 2. Architecture — Gémima | Blob → Event Grid → queue → worker → ONNX → output/Cosmos → dashboard |
-| 1:40–3:10 | 3. Model & API — Elias | Feature decision, rights, model metrics and /predict/batch, CI |
+| 1:40–3:10 | 3. Model & API — Elias | 21-input working contract, 19/21 ablation and rights gate, metrics, `/predict/batch`, 15 API tests, preview-only GHCR |
 | 3:10–4:40 | 4. Pipeline — Gémima | ETag, idempotent output, retries, rejection, 70 offline tests + 2 ONNX preview tests + 3 Azurite SDK tests |
 | 4:40–6:10 | 5. Azure and CI/CD — Aminata | Subscription, resource design, OIDC, GHCR digest, approved deployment |
 | 6:10–7:40 | 6. Monitoring & dashboard — Omar | Dashboard refresh, KQL metrics, email alert, actual cost |
@@ -28,8 +28,9 @@ and reproducibility, with explicit validation and traceable CI evidence.
 - Show a pre-recorded invalid CSV rejection, bounded retry/poison result, KQL and
   alert evidence rather than consuming presentation time on asynchronous waits.
 - Show CI run, image digest, actual Cost Analysis and limits; redact identifiers.
-- If Azure unavailable: demonstrate offline real-ONNX pipeline (verified preview run 45882194925) and clearly label
-  cloud acceptance incomplete. Never use mock results as Azure proof.
+- If Azure unavailable: demonstrate offline real-ONNX pipeline (latest verified preview run 45884397529:
+  2 ONNX + 3 isolated Azurite tests) and clearly label cloud acceptance incomplete.
+  Never use mock results or a branch-only GHCR publication as Azure proof.
 - Final slide: confirmed vs pending, limitations, cleanup after separate approval.
 
 ## Q&A preparation
