@@ -7,7 +7,7 @@ team approval pending. No claim of a completed Azure demo before evidence.
 | 0:00–0:40 | 1. Problem and goals — Gémima | Telecom attrition, event-driven batch scoring |
 | 0:40–1:40 | 2. Architecture — Gémima | Blob → Event Grid → queue → worker → ONNX → output/Cosmos → dashboard |
 | 1:40–3:10 | 3. Model & API — Elias | Feature decision, rights, model metrics and /predict/batch, CI |
-| 3:10–4:40 | 4. Pipeline — Gémima | ETag, idempotent output, retries, rejection, 70 offline tests + 2 refreshed real ONNX preview tests |
+| 3:10–4:40 | 4. Pipeline — Gémima | ETag, idempotent output, retries, rejection, 70 offline tests + 2 ONNX preview tests + 3 Azurite SDK tests |
 | 4:40–6:10 | 5. Azure and CI/CD — Aminata | Subscription, resource design, OIDC, GHCR digest, approved deployment |
 | 6:10–7:40 | 6. Monitoring & dashboard — Omar | Dashboard refresh, KQL metrics, email alert, actual cost |
 | 7:40–9:15 | 7. Demonstration / acceptance — team | Synthetic CSV, result, dashboard, telemetry, version; evidence only |
