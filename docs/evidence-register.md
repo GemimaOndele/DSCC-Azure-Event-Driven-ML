@@ -19,3 +19,8 @@ For each evidence file, record: date/time UTC; author; issue and PR; exact commi
 environment; expected/observed; test result; file/link; any incident; actual time spent.
 Use synthetic customer IDs. Do not include subscription ID, access token, secret,
 email, endpoint key or unredacted input/output data in public evidence.
+
+| 26 Nov | Gémima / R3 | Azure Bicep templates and guarded bootstrap | PR #24, commit d62968f, Actions 45880668170 | Compilation and guard tests passed; not deployed |
+| 26 Nov | Gémima / R3 | Align GHCR registry mode in CD | PR #23, commit 44881d2, Actions 45880607362 | Workflow lint passed; no release/deploy |
+
+Credit sufficiency for both student subscriptions is confirmed by the coordinator from previously shared evidence; selected owner and live region/quotas still require confirmation.
