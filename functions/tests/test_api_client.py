@@ -58,7 +58,8 @@ def test_permanent_statuses(status: int) -> None:
     with pytest.raises(PermanentInferenceError) as exc:
         client.predict_batch(ROWS, blob_name="batch.csv", etag="e1")
     assert exc.value.status_code == status
-    assert "bad row 2" in str(exc.value)
+    assert "bad row 2" not in str(exc.value)
+    assert str(exc.value) == f"API returned HTTP {status}"
 
 
 @pytest.mark.parametrize("status", [408, 429, 500, 502, 503, 504])
@@ -81,3 +82,20 @@ def test_invalid_success_payload_is_transient() -> None:
     client = client_for(lambda request: httpx.Response(200, text="not json"))
     with pytest.raises(TransientInferenceError, match="invalid JSON"):
         client.predict_batch(ROWS, blob_name="batch.csv", etag="e1")
+
+
+@pytest.mark.parametrize("change", ["wrong_id", "wrong_count", "bad_probability", "missing_summary"])
+def test_inconsistent_response_is_retryable(change):
+    import copy
+    payload = copy.deepcopy(BATCH_RESPONSE)
+    if change == "wrong_id":
+        payload["predictions"][0]["customerID"] = "other"
+    elif change == "wrong_count":
+        payload["summary"]["rows"] = 2
+    elif change == "bad_probability":
+        payload["predictions"][0]["churn_probability"] = 1.5
+    else:
+        del payload["summary"]
+    with pytest.raises(TransientInferenceError, match="inconsistent"):
+        client_for(lambda request: httpx.Response(200, json=payload)).predict_batch(
+            ROWS, blob_name="batch.csv", etag="e1")
