@@ -9,8 +9,14 @@
 # 10 appels : l'alerte part à la prochaine évaluation (≤ 15 min, plus quelques
 # minutes d'ingestion). Coût : négligeable (35 requêtes).
 set -euo pipefail
+[[ "${DSCC_ALERT_TEST_APPROVAL:-}" == APPROVED-DSCC-SYNTHETIC-ALERT-TEST ]] || {
+  echo "Synthetic alert test not approved; no requests sent." >&2; exit 2;
+}
 : "${API_URL:?Définir API_URL=https://<api>}"
 API_URL="${API_URL%/}"
+[[ "$API_URL" =~ ^https://[a-zA-Z0-9.-]+\.azurecontainerapps\.io$ ]] || {
+  echo "Expected approved Azure Container Apps HTTPS origin" >&2; exit 2;
+}
 
 VALID_ROW='{"customerID":"DEMO-0001","gender":"Female","SeniorCitizen":0,"Partner":"Yes","Dependents":"No","tenure":1,"PhoneService":"No","MultipleLines":"No phone service","InternetService":"DSL","OnlineSecurity":"No","OnlineBackup":"Yes","DeviceProtection":"No","TechSupport":"No","StreamingTV":"No","StreamingMovies":"No","Contract":"Month-to-month","PaperlessBilling":"Yes","PaymentMethod":"Electronic check","MonthlyCharges":29.85,"TotalCharges":29.85,"numAdminTickets":0,"numTechTickets":0}'
 
@@ -22,6 +28,7 @@ for i in $(seq 1 30); do
     -H 'Content-Type: application/json' -H "X-DSCC-Blob: alert-test-$i.csv" \
     -d '{"rows": []}' "$API_URL/predict/batch")
   printf 'invalide %02d -> %s\n' "$i" "$code"
+  [[ "$code" == 422 ]] || { echo "Unexpected invalid-request status" >&2; exit 1; }
 done
 
 for i in $(seq 1 5); do
@@ -29,7 +36,8 @@ for i in $(seq 1 5); do
     -H 'Content-Type: application/json' -H "X-DSCC-Blob: alert-ok-$i.csv" \
     -d "{\"rows\": [$VALID_ROW]}" "$API_URL/predict/batch")
   printf 'valide   %02d -> %s\n' "$i" "$code"
+  [[ "$code" == 200 ]] || { echo "Unexpected valid-request status" >&2; exit 1; }
 done
 
-echo "Attendre jusqu'à ~20 min : e-mail du groupe d'actions + alerte « Fired »"
-echo "dans Azure Monitor > Alertes. Faire les captures (voir docs/observability)."
+echo "HTTP statuses verified: 30 x 422 and 5 x 200. Alert firing still needs evidence."
+echo "Check actual Azure Monitor alert history and notification; do not infer firing from this script."
