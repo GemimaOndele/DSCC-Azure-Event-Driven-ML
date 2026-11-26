@@ -1,0 +1,44 @@
+name: DSCC E2E preview (pinned components)
+on:
+  pull_request:
+    paths:
+      - 'tests/e2e/**'
+      - '.github/workflows/ci-e2e-preview.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-real-model:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: 5388f1c901a9a56e0e46d8fb43c010f71312ce0e
+          path: .preview-api
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: 192e4c04c11da9299d0f14f0ff894e7265ad5265
+          path: .preview-pipeline
+          persist-credentials: false
+      - name: Assemble pinned code without merging any branch
+        run: |
+          set -euo pipefail
+          mkdir -p model
+          cp -a .preview-api/api .
+          cp .preview-api/model/features.json .preview-api/model/model-1.0.0.onnx model/
+          cp -a .preview-pipeline/functions .
+          rm -rf .preview-api .preview-pipeline
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r api/requirements-dev.txt -r functions/requirements.txt
+      - run: python -m pytest tests/e2e/test_pipeline.py -q --junitxml=e2e-preview.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-preview
+          path: e2e-preview.xml
+          if-no-files-found: warn
