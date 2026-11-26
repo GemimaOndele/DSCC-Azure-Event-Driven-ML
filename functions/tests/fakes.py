@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from typing import Any
+from threading import Lock
+from src.ports import StaleBlobVersionError
 
 
 class InMemoryBlobStore:
@@ -15,9 +17,19 @@ class InMemoryBlobStore:
         for name, payload in (files or {}).items():
             self.containers["input"][name] = (payload, {})
         self.writes: list[tuple[str, str]] = []
+        self.etags = {name: "0x8DC-A1" for name in (files or {})}
+        self._lock = Lock()
 
-    def download(self, name: str) -> bytes:
+    def download(self, name: str, *, etag: str) -> bytes:
+        if self.etags.get(name) != etag.strip('"') or name not in self.containers["input"]:
+            raise StaleBlobVersionError("Input version is no longer available")
         return self.containers["input"][name][0]
+
+    def read_output(self, name: str, *, idempotency_key: str) -> dict[str, Any] | None:
+        import json
+        with self._lock:
+            existing = self.containers["output"].get(f"{name}.{idempotency_key}.json")
+            return json.loads(existing[0]) if existing else None
 
     def upload_rejected(self, name: str, reason: dict[str, Any]) -> str:
         import json
@@ -35,16 +47,16 @@ class InMemoryBlobStore:
     ) -> bool:
         import json
 
-        blob_name = f"{name}.json"
-        existing = self.containers["output"].get(blob_name)
-        if existing and existing[1].get("idempotencykey") == idempotency_key:
-            return False
-        self.containers["output"][blob_name] = (
-            json.dumps(payload).encode(),
-            {"idempotencykey": idempotency_key},
-        )
-        self.writes.append(("output", blob_name))
-        return True
+        blob_name = f"{name}.{idempotency_key}.json"
+        with self._lock:
+            if blob_name in self.containers["output"]:
+                return False
+            self.containers["output"][blob_name] = (
+                json.dumps(payload, allow_nan=False).encode(),
+                {"idempotencykey": idempotency_key},
+            )
+            self.writes.append(("output", blob_name))
+            return True
 
 
 class FakeQueue:
@@ -62,7 +74,7 @@ class InMemoryResultStore:
     def upsert(self, metadata: dict[str, Any]) -> None:
         self.items[metadata["idempotencyKey"]] = metadata
 
-    def exists(self, idempotency_key: str) -> bool:
+    def exists(self, idempotency_key: str, *, file_name: str) -> bool:
         return idempotency_key in self.items
 
     def recent(self, limit: int) -> list[dict[str, Any]]:
