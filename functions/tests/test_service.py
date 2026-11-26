@@ -21,7 +21,7 @@ BATCH_RESPONSE = {
     "model_version": "1.0.0",
     "latency_ms": 12.3,
     "predictions": [
-        {"customerID": f"c{i}", "prediction": "Yes", "label": 1,
+        {"customerID": ["7590-VHVEG", "5575-GNVDE", "3668-QPYBK"][i], "prediction": "Yes", "label": 1,
          "churn_probability": 0.8, "confidence": 0.8}
         for i in range(3)
     ],
