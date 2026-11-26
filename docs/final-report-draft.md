@@ -127,8 +127,7 @@ access; GitHub Actions uses UAMI federation with restricted RG scope and OIDC.
 No hard-coded secrets. GHCR authentication is separate from ARM OIDC; private
 registry pull permissions must be approved and configured.
 
-The Azure sharing guide #15 is merged. Actual subscription, region, credits,
-quotas and RBAC remain pending verification. The proposed CI/CD checks the API,
+The Azure sharing guide #15 is merged. The coordinator confirms that both Gémima and Aminata have sufficient student credits, based on previously shared evidence; no new balance is asserted. The single selected subscription, region, quotas and actual RBAC remain pending. PR #24 now contains base.bicep, apps.bicep and a guarded bootstrap, validated by GitHub Actions run 45880668170 (both templates compiled, shell syntax and refusal without approval tested). No Azure resources were deployed. The proposed CI/CD checks the API,
 pipeline and authorized training; GHCR and Azure deployment are explicitly gated.
 Deployment must be manually approved, pin the commit image digest, validate
 GET /version, then deploy the existing Flex Functions package. No resources are
@@ -187,12 +186,12 @@ R1 Elias: ML/model API; R2 Aminata and Gémima: event pipeline; R3 Aminata and
 Gémima: Azure/CI-CD; R4 Omar: dashboard, observability and costs. Gémima coordinates
 integration and delivery. GitHub protected main, independent PR review, evidence-based
 issue closure. Do not approve own PR. All team members should understand a second
-domain for Q&A. Main currently contains #15; other technical components remain PRs. #21 and #22 are ready for independent review, with CI evidence; #23 CI/CD and #24 infrastructure preflight are prepared for review. #25 is this working report.
+domain for Q&A. Main currently contains #15; other technical components remain PRs. #21 and #22 are ready for independent review, with CI evidence; #23 CI/CD and #24 compiled infrastructure templates are prepared for review. #25 is this working report.
 
 Priority risk register:
 - dataset rights and temporal feature validity — Elias + team;
 - contract consistency and versioned outputs — Aminata/Elias/Gémima;
-- regional restrictions and student credits — Aminata/Gémima;
+- selected subscription, regional restrictions and quota — Aminata/Gémima (credit sufficiency confirmed by coordinator);
 - cross-branch conflicts and missing integrated CI — Gémima;
 - dashboard validation, monitoring and alert evidence — Omar;
 - limited schedule — all members; avoid deferring integration to defense eve.
