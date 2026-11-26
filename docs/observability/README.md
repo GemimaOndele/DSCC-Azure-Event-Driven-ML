@@ -116,26 +116,30 @@ traces
 
 ## 4. Alerte e-mail
 
-Script : [`infra/observability.sh`](../../infra/observability.sh). Il est idempotent pour
-l'espace de travail et Application Insights, et ne contient aucun secret : l'adresse
-e-mail est passée par `ALERT_EMAIL` au moment de l'exécution.
+Script : [`infra/observability.sh`](../../infra/observability.sh). Il réutilise exclusivement l'espace de travail et Application Insights déjà déployés par R3 (#24). Il vérifie l'abonnement, le lien entre ressources et le plafond journalier avant toute création d'alerte. L'adresse e-mail est transmise localement via `ALERT_EMAIL`.
 
 - **Type** : alerte de recherche dans les journaux, évaluée **toutes les 15 min** sur
   15 min (option la moins chère recommandée par le sujet), gravité 2, résolution
   automatique.
 - **Condition** (fichier [`kql/alerte-taux-erreur.kql`](kql/alerte-taux-erreur.kql)) :
   au moins 10 appels de prédiction **et** (taux d'erreur > 20 % **ou** latence p95 > 1 s).
-- **Notification** : groupe d'actions `ag-dscc-<equipe>` → e-mail.
+- **Notification** : groupe d'actions configurable (par défaut `dscc-alerts`) → e-mail.
 
 ### Déclenchement volontaire
 
 ```bash
-EQ=<equipe> ALERT_EMAIL=<adresse> bash infra/observability.sh   # une fois
-API_URL=https://<api> bash infra/trigger-alert.sh               # 30 × 422 + 5 × 200
+# Après approbation explicite du propriétaire et vérification du budget :
+export DSCC_SUBSCRIPTION="<abonnement choisi>"
+export DSCC_RG="<groupe R3 existant>"
+export DSCC_FUNCTION="<Function App existante>"
+export ALERT_EMAIL="<adresse approuvée>"
+DSCC_ALERT_APPROVAL=APPROVED-DSCC-ALERT bash infra/observability.sh
+# Autorisation distincte pour le trafic de test :
+DSCC_ALERT_TEST_APPROVAL=APPROVED-DSCC-SYNTHETIC-ALERT-TEST \
+  API_URL="https://<app>.azurecontainerapps.io" bash infra/trigger-alert.sh
 ```
 
-L'alerte passe à l'état *Fired* à l'évaluation suivante (≤ 15 min, plus quelques minutes
-d'ingestion), puis l'e-mail arrive. Elle se résout seule quand le trafic redevient sain.
+L'état *Fired* et l'e-mail doivent être constatés dans Azure ; aucun déclenchement n'est garanti par les seuls codes HTTP. Le script s'arrête si une requête ne renvoie pas le code attendu. Les extensions CLI nécessaires doivent être disponibles avant exécution.
 
 ## 5. Preuves à capturer pour le rapport
 
@@ -158,3 +162,7 @@ mémoire et vérifie exactement ce qui serait exporté :
 - 422 de validation (Pydantic et `NaN` filtré par le middleware) → `inference_errors`
   avec `reason=validation`, aucune ligne comptée ; un 404 sur une autre route n'est pas
   compté.
+
+### Contrôles hors cloud
+
+`bash tests/observability/test_guards.sh` utilise uniquement des doubles de commandes Azure CLI et curl. Aucun appel Azure réel. Le contrôle vérifie les autorisations, l'absence de création d'une seconde ressource de monitoring et les codes 422/200 attendus.
