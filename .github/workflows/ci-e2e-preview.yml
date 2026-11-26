@@ -15,12 +15,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
         with:
-          ref: 5388f1c901a9a56e0e46d8fb43c010f71312ce0e
+          ref: 69cf39c3fae9dbc61f5621af56ee92a4e70cf12e
           path: .preview-api
           persist-credentials: false
       - uses: actions/checkout@v4
         with:
-          ref: 192e4c04c11da9299d0f14f0ff894e7265ad5265
+          ref: 503280aa3a03ea74bcf33b913c5999de39a8d93f
           path: .preview-pipeline
           persist-credentials: false
       - name: Assemble pinned code without merging any branch
