@@ -106,11 +106,20 @@ jobs:
         if: hashFiles('model/requirements.txt') != ''
         with:
           python-version: '3.12'
-      - name: Training lint without dataset access
+      - name: Offline training artifact and provenance checks
         if: hashFiles('model/requirements.txt') != ''
         run: |
-          python -m pip install ruff==0.9.10
+          python -m pip install -r model/requirements.txt pytest ruff==0.9.10
           python -m ruff check model
+          python -m pytest model/tests/test_training.py -q -k 'test_committed_metrics_are_the_reference or test_onnx_artifact_is_the_shared_version or test_no_dataset_is_versioned or test_tampered_download_is_rejected' --junitxml=training-offline.xml
+      - name: Record missing permission
+        if: hashFiles('model/requirements.txt') != '' && vars.DATASET_USE_APPROVED != 'true'
+        run: echo 'Full dataset-dependent tests not executed - permission pending' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always() && hashFiles('training-offline.xml') != ''
+        with:
+          name: training-offline
+          path: training-offline.xml
       - name: Training tests
         if: hashFiles('model/requirements.txt') != '' && vars.DATASET_USE_APPROVED == 'true'
         run: |
