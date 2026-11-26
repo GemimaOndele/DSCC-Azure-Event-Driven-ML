@@ -1,0 +1,29 @@
+name: DSCC pairwise merge rehearsal
+on:
+  pull_request:
+    paths:
+      - 'tests/e2e/rehearse_merges.py'
+      - '.github/workflows/ci-merge-rehearsal.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  rehearsal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Simulate pairwise integrations (no commit or push)
+        run: |
+          git --version
+          python tests/e2e/rehearse_merges.py
+          cat merge-rehearsal.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: merge-rehearsal
+          path: |
+            merge-rehearsal.json
+            merge-rehearsal.md
