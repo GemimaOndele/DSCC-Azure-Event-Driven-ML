@@ -241,3 +241,23 @@ def test_concurrent_deliveries_share_one_canonical_output():
     blob = json.loads(next(iter(blobs.containers["output"].values()))[0])
     assert persisted["timestamp"] == blob["timestamp"]
     assert persisted["durationMs"] == blob["durationMs"]
+
+
+def test_invalid_queue_message_is_rejected_without_scoring():
+    blobs = blob_store()
+    class NeverApi:
+        def predict_batch(self, *args, **kwargs):
+            pytest.fail("Malformed queue message reached inference")
+    assert process('{"invalid": "private-value"}', settings=SETTINGS, blobs=blobs,
+                   api=NeverApi(), results=InMemoryResultStore())["status"] == "rejected"
+    raw = next(iter(blobs.containers["rejected"].values()))[0]
+    assert b"private-value" not in raw
+
+
+def test_rejection_does_not_expose_raw_cell_values():
+    data = FIXTURE.read_bytes().replace(b",Female,", b",PRIVATE-CELL,", 1)
+    blobs = InMemoryBlobStore({"batch_01.csv": data})
+    outcome = dispatch({**EVENT, "size": len(data)}, settings=SETTINGS, blobs=blobs, queue=FakeQueue())
+    assert outcome["status"] == "rejected"
+    assert "PRIVATE-CELL" not in outcome["reason"]
+    assert b"PRIVATE-CELL" not in next(iter(blobs.containers["rejected"].values()))[0]
