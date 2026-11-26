@@ -1,0 +1,20 @@
+name: DSCC dashboard tests
+on:
+  pull_request:
+    paths:
+      - 'web/**'
+      - 'tests/dashboard/**'
+      - '.github/workflows/ci-dashboard.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  dashboard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check web/app.js
+      - run: node --test tests/dashboard/test_data.cjs
