@@ -41,11 +41,11 @@ def validate_blob_name(blob_name: str) -> None:
     if not blob_name or len(blob_name) > 255:
         raise CsvContractError("blobName is empty or longer than 255 characters")
     if not blob_name.lower().endswith(".csv"):
-        raise CsvContractError(f"Only .csv files are accepted, got {blob_name!r}")
+        raise CsvContractError("Only .csv files are accepted")
     if "/" in blob_name or "\\" in blob_name or ".." in blob_name:
-        raise CsvContractError(f"Invalid blob name (path or traversal): {blob_name!r}")
+        raise CsvContractError("Invalid blob name (path or traversal)")
     if not BLOB_NAME_PATTERN.fullmatch(blob_name):
-        raise CsvContractError(f"Blob name contains unsupported characters: {blob_name!r}")
+        raise CsvContractError("Blob name contains unsupported characters")
 
 
 def validate_size(size: int, max_bytes: int) -> None:
@@ -62,9 +62,9 @@ def _parse_number(raw: str, *, field: str, integer: bool) -> int | float:
     try:
         value: int | float = int(text) if integer else float(text)
     except ValueError as exc:
-        raise CsvContractError(f"row {field}: {raw!r} is not a valid number") from exc
+        raise CsvContractError(f"row {field}: not a valid number") from exc
     if isinstance(value, float) and not math.isfinite(value):
-        raise CsvContractError(f"row {field}: non-finite number {raw!r}")
+        raise CsvContractError(f"row {field}: non-finite number")
     return value
 
 
@@ -78,14 +78,14 @@ def _validate_value(name: str, raw: str | None, spec: dict[str, Any]) -> Any:
     if spec["kind"] == "categorical":
         if text not in spec["allowed_values"]:
             raise CsvContractError(
-                f"unexpected category for {name}: {text!r} "
+                f"unexpected category for {name}; "
                 f"(allowed: {', '.join(spec['allowed_values'])})"
             )
         return text
     value = _parse_number(text, field=name, integer=api_type == "integer")
     lower, upper = spec["allowed_range"]
     if not lower <= value <= upper:
-        raise CsvContractError(f"{name}={value} is outside [{lower}, {upper}]")
+        raise CsvContractError(f"{name} is outside [{lower}, {upper}]")
     return value
 
 
@@ -104,10 +104,10 @@ def parse_csv(
     try:
         text = payload.decode("utf-8-sig")
     except UnicodeDecodeError as exc:
-        raise CsvContractError(f"File is not valid UTF-8: {exc}") from exc
+        raise CsvContractError("File is not valid UTF-8") from exc
 
     reader = csv.DictReader(io.StringIO(text))
-    header = [column.strip() if column else column for column in (reader.fieldnames or [])]
+    header = list(reader.fieldnames or [])
     expected = required_columns()
     if header != expected:
         missing = sorted(set(expected) - set(header))
@@ -115,8 +115,8 @@ def parse_csv(
         raise CsvContractError(
             "Invalid CSV header: "
             + (f"missing columns {missing}; " if missing else "")
-            + (f"unexpected columns {extra}; " if extra else "")
-            + f"got {header}"
+            + (f"unexpected columns ({len(extra)}); " if extra else "")
+            + "expected exact column order"
         )
 
     contract = {feature["name"]: feature for feature in load_feature_contract()["features"]}
@@ -136,7 +136,7 @@ def parse_csv(
         for name, raw_value in raw_row.items():
             if name == identifier:
                 customer_id = (raw_value or "").strip()
-                if not customer_id or len(customer_id) > 64:
+                if not customer_id or len(customer_id) > 64 or any(ord(c) < 32 or ord(c) == 127 for c in customer_id):
                     errors.append(f"row {line_number}: invalid customerID")
                 else:
                     parsed[name] = customer_id
