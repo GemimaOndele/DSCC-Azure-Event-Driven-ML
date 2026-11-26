@@ -1,0 +1,29 @@
+name: DSCC release conflict gate (offline)
+on:
+  pull_request:
+    paths:
+      - 'tests/release/**'
+      - '.github/workflows/ci-release-gate.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify all pinned pairs and sequence
+        run: python tests/release/verify_conflict_gate.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-conflict-gate
+          path: release-conflict-gate.json
+          if-no-files-found: warn
