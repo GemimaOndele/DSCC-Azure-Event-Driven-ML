@@ -15,13 +15,13 @@ HEADS = [
     ("14", "867130942074a04d77805a47de5baa4cc3a3fd96"),
     ("17", "5886584331997d5b1b5fae7f6602c58d876f0221"),
     ("18", "3cb9ffe327abdd68a58cd2c9d23a6797ee2f5bf9"),
-    ("20", "f2d215ccc7aca852323c320fbeab187794e42b37"),
+    ("20", "b81277f6d66a1d9e2b503e6fc54e7200732eb01f"),
     ("21", "503280aa3a03ea74bcf33b913c5999de39a8d93f"),
-    ("19", "59bbe8ce59b6f81f57bbc68dc46d5b20f2176a3f"),
+    ("19", "2f57b6495f5f434a1e26985e7333b9439f0c5048"),
     ("22", "52103dd0a8a8ee73bb55bdde6f5004de9f81b30c"),
-    ("23", "783dac9e685a78743313fb7e4ba3c4df9ad809e4"),
+    ("23", "fdfc4325eb18c9e5bd95d26f25b307f956c9657c"),
     ("24", "a981b2626deab860139b143a6b4029ce56a7998d"),
-    ("25", "de50c7ddbb88db117e76f0e6ac7ede148e570907"),
+    ("25", "c2ac5cb11cf7b5ac010611bd689098895021da75"),
 ]
 PINS = dict(HEADS)
 ROOT = Path(__file__).resolve().parents[2]
@@ -61,6 +61,9 @@ def main():
             git(candidate, "commit", "-m", f"preview PR {number}", "--allow-empty")
             report.append({"pr": number, "sha": sha, "resolved": conflicts})
             print(f"PR #{number}: {'resolved '+', '.join(conflicts) if conflicts else 'clean'}", flush=True)
+        # Canonical README proposal remains in docs; only the disposable tree
+        # uses it at the root. No remote branch is overwritten.
+        (candidate / "README.md").write_bytes((candidate / "docs/release-readme.md").read_bytes())
         model = json.loads((candidate / "model/features.json").read_text())
         worker = json.loads((candidate / "functions/contract/features.json").read_text())
         assert model["feature_count"] == worker["feature_count"] == 21
@@ -82,12 +85,14 @@ def main():
             [sys.executable, "-m", "pytest", "functions/tests", "-q"],
             [sys.executable, "-m", "pytest", "tests/e2e/test_pipeline.py", "-q"],
             ["node", "--check", "web/app.js"],
+            ["node", "--test", "tests/dashboard/test_data.cjs"],
+            ["bash", "tests/observability/test_guards.sh"],
         ]:
             subprocess.run(args, cwd=candidate, check=True)
         (ROOT / "sequential-preview.json").write_text(json.dumps({
             "base": BASE, "prs": report, "schema": "21-feature preview only",
             "checks": ["schema equality", "API preservation", "ignore rules", "no tracked data",
-                       "Ruff", "API pytest", "pipeline pytest", "ONNX E2E", "dashboard JS syntax"]
+                       "Ruff", "API pytest", "pipeline pytest", "ONNX E2E", "dashboard JS syntax and tests", "observability command guards"]
         }, indent=2))
     finally:
         git(ROOT, "worktree", "remove", "--force", str(candidate), check=False)
