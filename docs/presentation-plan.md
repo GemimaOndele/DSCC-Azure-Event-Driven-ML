@@ -51,3 +51,5 @@ and reproducibility, with explicit validation and traceable CI evidence.
 ## Rehearsal
 Each person prepares the slide content and can explain one neighboring component.
 Run a timed 10-minute rehearsal; record actual evidence links and unresolved issues.
+
+Latest evidence for rehearsal: 103 tests passed on assembled disposable integration preview (run 45884397493), plus three Azurite SDK tests separately. Three conflicting files were resolved temporarily, not on remote branches. Dashboard 16 tests and R4 mocked command guards are included in the preview; Azure alert and real deployment remain pending.
