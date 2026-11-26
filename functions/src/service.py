@@ -97,7 +97,12 @@ def process(
     results: ResultStore,
 ) -> dict[str, Any]:
     """Run one queue message. Permanent errors reject, transient errors retry."""
-    request = InferenceRequest.from_json(message_json)
+    try:
+        request = InferenceRequest.from_json(message_json)
+    except MessageError as exc:
+        # Invalid queue envelope is not a transient service failure.
+        blobs.upload_rejected("unknown.csv", rejection_reason("unknown.csv", "Invalid queue message"))
+        return {"status": "rejected", "reason": "Invalid queue message"}
     key = request.idempotency_key
     if results.exists(key, file_name=request.blobName):
         LOGGER.info("Duplicate delivery ignored", extra={"idempotencyKey": key})
@@ -112,7 +117,10 @@ def process(
     started = datetime.now(timezone.utc)
     try:
         data = blobs.download(request.blobName, etag=request.etag)
+        # Parse first to preserve the actionable CSV error; validate declared size for otherwise valid inputs.
         rows = parse_csv(data, settings=settings, blob_name=request.blobName)
+        if len(data) != request.size:
+            raise CsvContractError("Downloaded size differs from queue message")
         response = api.predict_batch(
             rows, blob_name=request.blobName, etag=request.etag
         )
@@ -168,7 +176,7 @@ def process(
             "blobName": request.blobName,
             "rows": metadata["rows"],
             "atRisk": metadata["atRisk"],
-            "durationMs": duration_ms,
+            "durationMs": metadata["durationMs"],
             "status": "ok",
         },
     )
