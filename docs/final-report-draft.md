@@ -98,7 +98,7 @@ POST /predict/batch, GET /metrics. The batch API consumes {"rows":[...]} and ret
 predictions, summary, model_version and latency_ms. Strict validation rejects invalid
 features and non-finite numeric values. HTTP 422 is a permanent input error;
 transient network/429/5xx failures are retried by the worker.
-Evidence: #17, current head 5886584, run 45883545674: 15 API tests, Ruff, Docker build and the <500 MB image gate. The GHCR workflow on #17 is now manual and opt-in, and publishes only `preview-<commit-sha>`; no new publication followed that change. The historical branch publication run 45880950088 (SHA 6fb916d, tags 1.0.0 and sha-6fb916d19230cdd29fccffccdf3722704f1f8b25, digest sha256:7932660bde49aeeaffad67fd58f5609a80ab123b11b632d663a0f88adab3b3f8) remains branch proof only. It establishes neither final integrated release, artifact rights, package visibility nor Azure deployment.
+Evidence: #17, current head 8672dfd after the shared-file synchronisation commits, run 45885173139: 15 API tests, Ruff, Docker build and the <500 MB image gate. The GHCR workflow on #17 is manual and opt-in, and publishes only `preview-<commit-sha>`; no new publication followed that change. The historical branch publication run 45880950088 (SHA 6fb916d, tags 1.0.0 and sha-6fb916d19230cdd29fccffccdf3722704f1f8b25, digest sha256:7932660bde49aeeaffad67fd58f5609a80ab123b11b632d663a0f88adab3b3f8) remains branch proof only. It establishes neither final integrated release, artifact rights, package visibility nor Azure deployment.
 
 ## 6. Pipeline and distributed systems
 
