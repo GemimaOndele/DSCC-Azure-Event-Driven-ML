@@ -89,8 +89,8 @@ Keep AZURE_DEPLOY_ENABLED=false until the release is approved.
 
 ## Stage 2 — application infrastructure (after approved model/image)
 After #14/#18 decisions, approved integration and successful CI on main,
-set DATASET_USE_APPROVED and ENABLE_GHCR only with documented rights to publish
-the artifact. Publish immutable SHA-tagged image, record digest. Private GHCR
+set MODEL_ARTIFACT_PUBLISH_APPROVED and ENABLE_GHCR only with documented rights to publish
+the artifact. DATASET_USE_APPROVED independently gates training/download. The R1 branch image published on 26 November (run 45880950088, SHA 6fb916d) is evidence of branch publication, not final release or permission; do not deploy it without approval. Publish immutable SHA-tagged image, record digest. Private GHCR
 requires a separately authorized scoped read token stored as an Azure secret.
 The bootstrap prompts for this only in the owner's terminal, never via chat.
 Public registry option requires explicit package visibility approval.
