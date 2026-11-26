@@ -40,3 +40,18 @@ Credit sufficiency for both student subscriptions is confirmed by the coordinato
 | Gémima / QA | #22 1cccf50, run 45883033290 | 2 ONNX tests + 3 actual SDK tests with isolated Azurite, passed; first fixture attempt failed and was corrected |
 | Gémima / integration | #22 52103dd, run 45883107858 | 12 pairwise Git rehearsals: 5 conflict, 7 clean; no remote merge |
 | Gémima / CI | #23 783dac9, run 45882995776 | Actionlint passed; added API image size gate <500 MB and release digest evidence; component build/publish not executed on isolated branch |
+
+### Integration hardening — 26 November
+
+| Contributor | Proof | Result |
+|---|---|---|
+| Gémima / coordination | #14 8671309 | Move overview to docs; eliminate root README change |
+| Elias | #17 5886584, run 45883553318 | Preview-only manual GHCR workflow; no new publication |
+| Gémima / R4 support | #19 2f57b64, run 45884267755 | 16 Node tests passed |
+| Gémima / R4 support | #20 b81277f, run 45884243968 | Mocked command guards, 15 API tests (overlap R1), Ruff and Docker passed |
+| Gémima / QA | #22 65c11e9, run 45884397543 | 3 pairwise conflicts, 9 clean |
+| Gémima / QA | #22 65c11e9, run 45884397493 | Sequential 10 PR preview, 103 tests passed, Ruff and guards passed |
+| Gémima / QA | #22 65c11e9, run 45884397529 | 2 ONNX + 3 Azurite tests passed |
+| Gémima / CI | #23 fdfc432, run 45884272396 | Integrated R4 jobs added; workflow CI success on isolated branch |
+
+No remote merge, real Azure resource operation or publication was performed by the coordinator. Remaining dataset/artifact permission, schema decision, human reviews and live cloud validation are explicit release gates.
