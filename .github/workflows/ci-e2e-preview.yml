@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
         with:
-          ref: 69cf39c3fae9dbc61f5621af56ee92a4e70cf12e
+          ref: 5886584331997d5b1b5fae7f6602c58d876f0221
           path: .preview-api
           persist-credentials: false
       - uses: actions/checkout@v4
