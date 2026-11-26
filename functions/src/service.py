@@ -12,11 +12,12 @@ from .api_client import (
     InferenceError,
     PermanentInferenceError,
     TransientInferenceError,
+    validate_batch_response,
 )
 from .config import Settings
 from .contract import CsvContractError, parse_csv, validate_blob_name, validate_size
 from .messages import InferenceRequest, MessageError, rejection_reason
-from .ports import BlobStore, QueueSender, ResultStore
+from .ports import BlobStore, QueueSender, ResultStore, StaleBlobVersionError
 
 LOGGER = logging.getLogger("dscc.pipeline")
 
@@ -53,25 +54,31 @@ def dispatch(
         validate_blob_name(blob_name)
         size = int(event_data.get("contentLength", event_data.get("size", 0)))
         validate_size(size, settings.max_csv_bytes)
-        data = blobs.download(blob_name)
+        etag = event_data.get("etag") or event_data.get("eTag") or ""
+        if not isinstance(etag, str) or not etag:
+            raise MessageError("Event Grid event has no etag")
+        data = blobs.download(blob_name, etag=etag)
         if len(data) != size and size:
             raise CsvContractError(
                 f"Declared size {size} does not match downloaded size {len(data)}"
             )
         rows = parse_csv(data, settings=settings, blob_name=blob_name)
-        etag = event_data.get("etag") or event_data.get("eTag") or ""
-        if not etag:
-            raise MessageError("Event Grid event has no etag")
         message = InferenceRequest.create(
             blob_name, str(etag), len(data), _utc_now()
         )
         queue.send_message(message.to_json())
+    except StaleBlobVersionError:
+        return {"status": "superseded"}
     except (CsvContractError, MessageError, ValueError) as exc:
-        reason = getattr(exc, "reason", str(exc))
-        blobs.upload_rejected(
-            blob_name if "blob_name" in locals() else "unknown.csv",
-            rejection_reason(blob_name if "blob_name" in locals() else "unknown", reason),
-        )
+        reason = exc.reason if isinstance(exc, CsvContractError) else "Invalid event metadata"
+        safe_name = "unknown.csv"
+        try:
+            candidate = locals().get("blob_name", "")
+            validate_blob_name(candidate)
+            safe_name = candidate
+        except CsvContractError:
+            pass
+        blobs.upload_rejected(safe_name, rejection_reason(safe_name, reason))
         LOGGER.warning("CSV rejected", extra={"reason": reason[:300]})
         return {"status": "rejected", "reason": reason}
 
@@ -92,17 +99,26 @@ def process(
     """Run one queue message. Permanent errors reject, transient errors retry."""
     request = InferenceRequest.from_json(message_json)
     key = request.idempotency_key
-    if results.exists(key):
+    if results.exists(key, file_name=request.blobName):
         LOGGER.info("Duplicate delivery ignored", extra={"idempotencyKey": key})
         return {"status": "duplicate", "idempotencyKey": key}
 
+    # Recover after a crash between the immutable blob write and the metadata upsert.
+    existing = blobs.read_output(request.blobName, idempotency_key=key)
+    if existing is not None:
+        results.upsert(_output_metadata(existing))
+        return {"status": "ok", "idempotencyKey": key, "rows": existing["rows"]}
+
     started = datetime.now(timezone.utc)
     try:
-        data = blobs.download(request.blobName)
+        data = blobs.download(request.blobName, etag=request.etag)
         rows = parse_csv(data, settings=settings, blob_name=request.blobName)
         response = api.predict_batch(
             rows, blob_name=request.blobName, etag=request.etag
         )
+        validate_batch_response(response, rows)
+    except StaleBlobVersionError:
+        return {"status": "superseded", "idempotencyKey": key}
     except (PermanentInferenceError, CsvContractError) as exc:
         blobs.upload_rejected(
             request.blobName, rejection_reason(request.blobName, str(exc))
@@ -141,6 +157,10 @@ def process(
     written = blobs.upload_output(request.blobName, payload, idempotency_key=key)
     if not written:
         LOGGER.info("Output already written", extra={"idempotencyKey": key})
+        winner = blobs.read_output(request.blobName, idempotency_key=key)
+        if winner is None:
+            raise RetryableWorkerError("Concurrent output not readable")
+        metadata = _output_metadata(winner)
     results.upsert(metadata)
     LOGGER.info(
         "Inference stored",
@@ -153,6 +173,12 @@ def process(
         },
     )
     return {"status": "ok", "idempotencyKey": key, "rows": metadata["rows"]}
+
+
+def _output_metadata(payload: dict[str, Any]) -> dict[str, Any]:
+    fields = ("id", "idempotencyKey", "fileName", "blobName", "etag", "timestamp",
+              "rows", "atRisk", "avgChurnProbability", "modelVersion", "durationMs", "status")
+    return {field: payload[field] for field in fields}
 
 
 def recent(
