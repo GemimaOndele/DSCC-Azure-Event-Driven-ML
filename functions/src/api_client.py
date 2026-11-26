@@ -65,9 +65,9 @@ class InferenceClient:
                 },
             )
         except httpx.TimeoutException as exc:
-            raise TransientInferenceError(f"API timeout: {exc}") from exc
+            raise TransientInferenceError("API timeout") from exc
         except httpx.HTTPError as exc:
-            raise TransientInferenceError(f"API connection error: {exc}") from exc
+            raise TransientInferenceError("API connection error") from exc
 
         if response.status_code == 200:
             try:
@@ -94,7 +94,10 @@ class InferenceClient:
 def validate_batch_response(payload: dict[str, Any], rows: list[dict[str, Any]]) -> None:
     """Reject malformed or inconsistent success responses before persistence."""
     def number(value: Any, minimum: float, maximum: float) -> bool:
-        return type(value) in (int, float) and math.isfinite(value) and minimum <= value <= maximum
+        try:
+            return type(value) in (int, float) and math.isfinite(value) and minimum <= value <= maximum
+        except OverflowError:
+            return False
 
     def fail() -> None:
         raise TransientInferenceError("API returned inconsistent batch response")
