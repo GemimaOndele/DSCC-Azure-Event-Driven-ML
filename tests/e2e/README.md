@@ -28,6 +28,7 @@ It is not a test of Event Grid, Functions triggers, Azure Storage or Cosmos.
 | E08 | Observe Container Apps after idle period | 0 replicas if configuration permits | Azure Metrics/replicas evidence, time window | Aminata |
 | E09 | Trigger agreed R4 alert with safe synthetic requests | KQL metrics, alert fired and email | KQL query results and alert history | Omar |
 | E10 | Read Cost Analysis and check RBAC and secrets | Within approved budget; least privilege; no committed credentials | Redacted Cost Analysis and role assignments | All |
+| E11 | Compare approved GHCR digest and SHA tag to Container Apps revision and GET /version | Deployed image digest and release ID match the approved release commit | GHCR push logs, revision metadata, version JSON | Gémima + Elias |
 
 ## Evidence register
 For each run, record date/time UTC, environment (offline / Azure), exact commit,
@@ -41,3 +42,5 @@ Dataset rights and feature contract confirmed; CI passed on integrated main; GHC
 image digest known; region/quotas/budget approved; Azure deployment explicitly
 authorized. No automatic provisioning or fault injection into a shared environment.
 After demonstration, cleanup is a separate authorized operation and must be evidenced.
+
+R1 branch GHCR publication observed in run 45880950088: tag 1.0.0 and sha-6fb916d19230cdd29fccffccdf3722704f1f8b25, digest sha256:7932660bde49aeeaffad67fd58f5609a80ab123b11b632d663a0f88adab3b3f8. This proves branch publication, not integrated main, model publication authorization or Azure deployment. E11 remains unexecuted.
