@@ -7,6 +7,7 @@ Page HTML/JS (Chart.js) hébergée dans le conteneur `$web` du compte de stockag
 | Fichier | Rôle |
 |---|---|
 | `index.html` | Structure : KPI, graphique, tableau des 20 dernières inférences |
+| `data.js` | Validation complète du contrat, agrégats et génération simulée bornée |
 | `app.js` | Appel `/api/recent`, délai d'expiration de 10 s, rendu, boucle de 30 s |
 | `config.js` | URL publique de la Function App (**aucun secret**) |
 | `style.css` | Thème clair/sombre, mise en page responsive |
@@ -35,7 +36,7 @@ Affichage :
 
 Robustesse : tout le texte venant de l'API est inséré via `textContent` (aucune
 injection HTML). En cas d'erreur réseau ou de délai dépassé, un bandeau s'affiche, les
-dernières données restent visibles et un nouvel essai a lieu au cycle suivant. Si
+dernières données restent visibles et un nouvel essai a lieu au cycle suivant. La réponse entière est validée avant rendu ; les probabilités absentes sont exclues de la moyenne pondérée, pas transformées en zéro. Le mode simulé reste limité à 20 résultats.  Si
 aucune inférence n'existe, un état vide s'affiche. L'actualisation est suspendue quand
 l'onglet est masqué, puis reprend dès qu'il redevient visible. Chart.js est épinglé
 (4.4.1) avec une empreinte SRI.
@@ -89,3 +90,7 @@ requête dans le navigateur.
    ligne dans les 30 s suivantes (capture avant/après avec les horodatages).
 3. Onglet Réseau du navigateur montrant `GET /api/recent` → 200 avec
    `Access-Control-Allow-Origin` égal à l'origine `$web`.
+
+## Tests automatisés
+
+`node --test tests/dashboard/test_data.cjs` : validation, dates, types, bornes, doublons, agrégats, taille du mode simulé. Le run 45884040393 a confirmé 16 tests réussis. Une recette navigateur et Azure reste nécessaire.
