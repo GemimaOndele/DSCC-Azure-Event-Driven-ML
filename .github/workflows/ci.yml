@@ -50,6 +50,13 @@ jobs:
       - name: Build container without publishing
         if: hashFiles('api/Dockerfile') != ''
         run: docker build -f api/Dockerfile -t dscc-api:ci .
+      - name: Assert API image size below 500 MB
+        if: hashFiles('api/Dockerfile') != ''
+        run: |
+          set -euo pipefail
+          SIZE="$(docker image inspect dscc-api:ci --format '{{.Size}}')"
+          echo "API image size: $SIZE bytes (limit 500000000)" >> "$GITHUB_STEP_SUMMARY"
+          test "$SIZE" -lt 500000000
       - uses: actions/upload-artifact@v4
         if: always() && hashFiles('api-tests.xml') != ''
         with:
@@ -156,6 +163,14 @@ jobs:
           echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'
           echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
           docker build -f api/Dockerfile -t "$IMAGE:$VERSION" -t "$IMAGE:sha-$GITHUB_SHA" .
+          SIZE="$(docker image inspect "$IMAGE:$VERSION" --format '{{.Size}}')"
+          test "$SIZE" -lt 500000000
           docker push "$IMAGE:sha-$GITHUB_SHA"
           docker push "$IMAGE:$VERSION"
-          echo "Published $IMAGE:sha-$GITHUB_SHA and $IMAGE:$VERSION" >> "$GITHUB_STEP_SUMMARY"
+          DIGEST="$(docker inspect --format='{{index .RepoDigests 0}}' "$IMAGE:sha-$GITHUB_SHA")"
+          printf 'Image: %s\nSize: %s bytes\nCommit: %s\n' "$DIGEST" "$SIZE" "$GITHUB_SHA" > release-evidence.txt
+          cat release-evidence.txt >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-evidence
+          path: release-evidence.txt
