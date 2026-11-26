@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Protocol
 
 import httpx
+import math
 
 
 PERMANENT_STATUSES = frozenset({400, 401, 403, 404, 405, 409, 422})
@@ -77,6 +78,7 @@ class InferenceClient:
                 payload.get("predictions"), list
             ):
                 raise TransientInferenceError("API response has no predictions list")
+            validate_batch_response(payload, rows)
             return payload
 
         # Do not persist response bodies: validation errors can echo client data.
@@ -87,3 +89,42 @@ class InferenceClient:
             raise TransientInferenceError(message, status_code=response.status_code)
         # Unknown status: conservative choice, bounded by maxDequeueCount.
         raise TransientInferenceError(message, status_code=response.status_code)
+
+
+def validate_batch_response(payload: dict[str, Any], rows: list[dict[str, Any]]) -> None:
+    """Reject malformed or inconsistent success responses before persistence."""
+    def number(value: Any, minimum: float, maximum: float) -> bool:
+        return type(value) in (int, float) and math.isfinite(value) and minimum <= value <= maximum
+
+    def fail() -> None:
+        raise TransientInferenceError("API returned inconsistent batch response")
+
+    if not isinstance(payload, dict):
+        fail()
+    predictions, summary = payload.get("predictions"), payload.get("summary")
+    version = payload.get("model_version")
+    if (not isinstance(predictions, list) or not isinstance(summary, dict)
+            or not isinstance(version, str) or not version.strip()
+            or len(predictions) != len(rows) or not rows
+            or not number(payload.get("latency_ms"), 0, float("inf"))):
+        fail()
+    if (type(summary.get("rows")) is not int or summary["rows"] != len(rows)
+            or type(summary.get("atRisk")) is not int
+            or summary.get("model_version") != version
+            or not number(summary.get("threshold"), 0, 1)
+            or not number(summary.get("avgChurnProbability"), 0, 1)):
+        fail()
+    probabilities = []
+    labels = []
+    for row, item in zip(rows, predictions):
+        if (not isinstance(item, dict) or item.get("customerID") != row.get("customerID")
+                or type(item.get("label")) is not int or item["label"] not in (0, 1)
+                or item.get("prediction") != ("Yes" if item["label"] else "No")
+                or not number(item.get("churn_probability"), 0, 1)
+                or not number(item.get("confidence"), 0, 1)):
+            fail()
+        probabilities.append(item["churn_probability"])
+        labels.append(item["label"])
+    if (sum(labels) != summary["atRisk"]
+            or not math.isclose(sum(probabilities) / len(rows), summary["avgChurnProbability"], abs_tol=1e-5)):
+        fail()
