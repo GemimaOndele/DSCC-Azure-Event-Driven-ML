@@ -24,3 +24,13 @@ email, endpoint key or unredacted input/output data in public evidence.
 | 26 Nov | Gémima / R3 | Align GHCR registry mode in CD | PR #23, commit 44881d2, Actions 45880607362 | Workflow lint passed; no release/deploy |
 
 Credit sufficiency for both student subscriptions is confirmed by the coordinator from previously shared evidence; selected owner and live region/quotas still require confirmation.
+
+### R1/R2 follow-up — 26 Nov
+
+| Contributor | Proof | Result |
+|---|---|---|
+| Elias | #17 69cf39c, run 45881702134 | 15 tests + Ruff + Docker build |
+| Elias | #18 3cb9ffe, run 45881717150 | 8 tests + Ruff; data rights pending |
+| Elias | GHCR run 45880950088, SHA 6fb916d | Branch image published, digest recorded in report; final deployment pending |
+| Gémima / R2 | #21 503280a, run 45882123936 | 70 tests + Ruff; customerID review addressed |
+| Gémima / R3 | #23 d972d2d, run 45882157727 | Actionlint passed; integrated components absent on isolated branch; publication skipped |
