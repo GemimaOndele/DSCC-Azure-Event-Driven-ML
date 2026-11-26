@@ -93,8 +93,8 @@ def test_worker_writes_output_and_metadata() -> None:
     outcome = process(message(), settings=SETTINGS, blobs=blobs, api=api(), results=results)
     assert outcome["status"] == "ok"
     assert outcome["rows"] == 3
-    assert blobs.containers["output"]["batch_01.csv.json"][1]["idempotencykey"] == outcome["idempotencyKey"]
-    payload = json.loads(blobs.containers["output"]["batch_01.csv.json"][0])
+    assert blobs.containers["output"][f"batch_01.csv.{outcome['idempotencyKey']}.json"][1]["idempotencykey"] == outcome["idempotencyKey"]
+    payload = json.loads(blobs.containers["output"][f"batch_01.csv.{outcome['idempotencyKey']}.json"][0])
     assert len(payload["predictions"]) == 3
     assert payload["summary"]["atRisk"] == 3
 
@@ -183,3 +183,61 @@ def test_dispatch_accepts_event_grid_content_length() -> None:
     queue = FakeQueue()
     assert dispatch(event, settings=SETTINGS, blobs=blob_store(), queue=queue)["status"] == "queued"
     assert len(queue.messages) == 1
+
+
+def test_stale_event_never_scores_new_blob():
+    blobs = blob_store()
+    blobs.etags["batch_01.csv"] = "new-version"
+    queue = FakeQueue()
+    assert dispatch(EVENT, settings=SETTINGS, blobs=blobs, queue=queue)["status"] == "superseded"
+    assert not queue.messages
+    class NeverApi:
+        def predict_batch(self, *args, **kwargs):
+            pytest.fail("A stale version must not be scored")
+    assert process(message(), settings=SETTINGS, blobs=blobs,
+                   api=NeverApi(), results=InMemoryResultStore())["status"] == "superseded"
+
+
+def test_recover_output_after_metadata_failure():
+    blobs = blob_store()
+    results = InMemoryResultStore()
+    outcome = process(message(), settings=SETTINGS, blobs=blobs, api=api(), results=results)
+    original = results.items.pop(outcome["idempotencyKey"])
+    class NeverApi:
+        def predict_batch(self, *args, **kwargs):
+            pytest.fail("Recovery must reuse persisted output")
+    assert process(message(), settings=SETTINGS, blobs=blobs, api=NeverApi(), results=results)["status"] == "ok"
+    assert results.items[outcome["idempotencyKey"]] == original
+    assert len(blobs.containers["output"]) == 1
+
+
+def test_new_version_preserves_old_output():
+    blobs, results = blob_store(), InMemoryResultStore()
+    first = process(message(), settings=SETTINGS, blobs=blobs, api=api(), results=results)
+    blobs.etags["batch_01.csv"] = "new-version"
+    new = json.loads(message())
+    new["etag"] = "new-version"
+    second = process(json.dumps(new), settings=SETTINGS, blobs=blobs, api=api(), results=results)
+    assert first["idempotencyKey"] != second["idempotencyKey"]
+    assert len(blobs.containers["output"]) == len(results.items) == 2
+
+
+def test_concurrent_deliveries_share_one_canonical_output():
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+    blobs, results = blob_store(), InMemoryResultStore()
+    barrier = Barrier(2)
+    class ConcurrentApi:
+        def predict_batch(self, *args, **kwargs):
+            barrier.wait(timeout=5)
+            return BATCH_RESPONSE
+    def run(_):
+        return process(message(), settings=SETTINGS, blobs=blobs, api=ConcurrentApi(), results=results)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        outcomes = list(pool.map(run, range(2)))
+    assert outcomes[0]["idempotencyKey"] == outcomes[1]["idempotencyKey"]
+    assert len(blobs.containers["output"]) == len(results.items) == 1
+    persisted = next(iter(results.items.values()))
+    blob = json.loads(next(iter(blobs.containers["output"].values()))[0])
+    assert persisted["timestamp"] == blob["timestamp"]
+    assert persisted["durationMs"] == blob["durationMs"]
