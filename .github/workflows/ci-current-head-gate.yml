@@ -1,0 +1,79 @@
+name: DSCC current-head integration gate (offline)
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/ci-current-head-gate.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  integration-gate:
+    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.head.ref == 'ci/github-actions' && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Record current PR heads and main using read-only GitHub API
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, re, subprocess
+          from pathlib import Path
+          repo = os.environ["GH_REPO"]
+          def api(path):
+              return json.loads(subprocess.check_output(["gh", "api", f"repos/{repo}/{path}"], text=True))
+          def sha(value):
+              if not re.fullmatch(r"[a-f0-9]{40}", value):
+                  raise RuntimeError("Invalid Git SHA")
+              return value
+          base = sha(api("git/ref/heads/main")["object"]["sha"])
+          expected = ["14","17","18","20","21","19","22","23","24","25"]
+          heads = []
+          for number in expected:
+              pr = api(f"pulls/{number}")
+              if pr["state"] != "open" or pr["head"]["repo"]["full_name"] != repo or pr["base"]["ref"] != "main":
+                  raise RuntimeError(f"PR #{number} changed state, repository or base; review the release sequence")
+              heads.append([number, sha(pr["head"]["sha"])])
+          Path("current-heads.json").write_text(json.dumps({"base":base,"heads":heads}, indent=2))
+          print(Path("current-heads.json").read_text())
+          PY
+      - name: Run reviewed integration gate against the recorded snapshot
+        run: |
+          set -euo pipefail
+          # Reviewed gate implementation from #25, never fetch a moving script.
+          mkdir -p tests/release
+          git show c7fb67cafd347583a5bc9f8566cb566a0eb4abba:tests/release/verify_conflict_gate.py > tests/release/verify_conflict_gate.py
+          python - <<'PY'
+          import importlib.util, json, subprocess
+          from pathlib import Path
+          snapshot = json.loads(Path("current-heads.json").read_text())
+          for sha in [snapshot["base"], *(entry[1] for entry in snapshot["heads"])]:
+              subprocess.run(["git","cat-file","-e",sha+"^{commit}"],check=True)
+          spec = importlib.util.spec_from_file_location("reviewed_gate", "tests/release/verify_conflict_gate.py")
+          gate = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(gate)
+          gate.BASE = snapshot["base"]
+          gate.HEADS = [tuple(entry) for entry in snapshot["heads"]]
+          gate.PINS = dict(gate.HEADS)
+          gate.main()
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: current-head-integration-evidence
+          path: |
+            current-heads.json
+            release-conflict-gate.json
+          if-no-files-found: warn
