@@ -99,3 +99,8 @@ Cette branche est une proposition de code en PR ; elle n'est ni approuvée ni d�
   Real Azure SDK/binding behavior and poison queue require separate E2E proof.
 - This is not a deployed service. The SDK adapters use Azure endpoints and managed
   identity; the offline tests use in-memory adapters, not an actual Azurite instance.
+
+- Customer ID contract alignment (Elias review): 1–64 ASCII letters, digits,
+  dot, underscore or hyphen; invalid identifiers are rejected before enqueue,
+  with no raw identifier echoed. The current regex mirrors the API; move to a
+  shared schema field only with R1 agreement.
