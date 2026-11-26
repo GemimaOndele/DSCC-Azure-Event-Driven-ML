@@ -150,6 +150,8 @@ No customer values should be written to metrics labels or screenshots.
 | Training PR #18 CI | Verified 8 tests and Ruff; dataset rights/feature decision outstanding |
 | Pipeline PR #21 CI | Verified 70 offline tests and Ruff passed |
 | Integrated real-ONNX pipeline | Refreshed preview: 2 passed, 2 warnings, run 45882194925; pinned API 69cf39c and pipeline 503280a; no Azure |
+| Local Azure SDK integration (Azurite) | Verified 3 tests, run 45883033290; Blob/Queue/Table, not Cosmos or Functions host |
+| Git pairwise integration rehearsal | 12 pairs checked; 5 conflicts, 7 clean; run 45883107858 |
 | Azure E2E under 60 s | Not performed |
 | Rejection and poison queue in Azure | Not performed |
 | Dashboard, KQL, fired alert and email | Not performed |
@@ -159,6 +161,8 @@ No customer values should be written to metrics labels or screenshots.
 
 Evidence files should include UTC date, exact commit, environment, test ID,
 expected/observed result and owner, with secrets/personal data redacted.
+
+The QA branch also verifies the real Azure Storage SDK against isolated Azurite (Blob, Queue and Table): ETag conditional reads, Base64 queue payload, immutable concurrent writes, metadata recovery and sanitized rejection. Three tests passed in run 45883033290 after correcting the test fixture credential type. No actual Azure authentication, Cosmos DB, Event Grid or Functions host was exercised. The emulator uses a pinned image and a deliberately synthetic local key. A pairwise Git merge-tree rehearsal confirmed five conflicting pairs and seven clean pairs; see docs/integration-plan.md. No remote merge was performed.
 
 ## 10. Cost model and actual costs
 
