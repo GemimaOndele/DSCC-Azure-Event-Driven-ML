@@ -114,7 +114,7 @@ GitHub Actions run 45878414101, job 140111279553, 61 offline tests passed; after
 These tests use in-memory adapters and HTTP mocks; they do not prove real Azure
 SDK behavior or end-to-end cloud operation. Independent integration preview #22,
 run 45878841099, verified 2 tests passed with the real ONNX API and synthetic inputs,
-using pinned API 5388f1c and pipeline 192e4c0 without merging main.
+using pinned API 5388f1c and pipeline 192e4c0 without merging main. The refreshed preview at #22 886ee85 against API 69cf39c and pipeline 503280a again passed both tests (run 45882194925).
 
 ## 7. Infrastructure, security and CI/CD
 
@@ -149,7 +149,7 @@ No customer values should be written to metrics labels or screenshots.
 | API PR #17 CI | Verified 15 tests, Ruff and Docker build |
 | Training PR #18 CI | Verified 8 tests and Ruff; dataset rights/feature decision outstanding |
 | Pipeline PR #21 CI | Verified 70 offline tests and Ruff passed |
-| Integrated real-ONNX pipeline | Verified preview: 2 passed, 2 warnings, run 45878841099; pinned API 5388f1c and pipeline 192e4c0; no Azure |
+| Integrated real-ONNX pipeline | Refreshed preview: 2 passed, 2 warnings, run 45882194925; pinned API 69cf39c and pipeline 503280a; no Azure |
 | Azure E2E under 60 s | Not performed |
 | Rejection and poison queue in Azure | Not performed |
 | Dashboard, KQL, fired alert and email | Not performed |
