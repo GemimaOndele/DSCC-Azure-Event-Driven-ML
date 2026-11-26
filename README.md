@@ -65,7 +65,7 @@ py -3.12 -m pytest api\tests -q
 py -3.12 -m pytest model\tests -q   # on feat/ml-training
 ```
 
-Pull requests use the single workflow `.github/workflows/ci-ml.yml`: job `api-tests` (ruff, pytest, Docker build, <500 MB image gate) on `feat/ml-api`, and job `training-tests` (ruff + reproducibility tests) on `feat/ml-training`. GHCR publication is handled by `.github/workflows/publish-api.yml` on `feat/ml-api`. Evidence: [CI run 45880949925](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/45880949925) and [publish run 45880950088](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/45880950088).
+Pull requests use the single workflow `.github/workflows/ci-ml.yml`: job `api-tests` (ruff, pytest, Docker build, <500 MB image gate) on `feat/ml-api`, and job `training-tests` (ruff + reproducibility tests) on `feat/ml-training`. Evidence: [CI run 45880949925](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/45880949925). A **manual, opt-in** workflow `.github/workflows/publish-api.yml` can publish only a `preview-<commit-sha>` tag for branch testing; it never pushes `1.0.0` or `sha-<commit>`. Those release tags are reserved for the integrated workflow in PR #23 from `main`.
 
 ## Container
 
@@ -75,6 +75,6 @@ Build the multi-stage image from the repository root:
 docker build -f api\Dockerfile -t churn-ml-api:1.0.0 .
 ```
 
-The container runs as an unprivileged user and loads `/app/model/model-1.0.0.onnx`. It is published to GHCR as `ghcr.io/gemimaondele/dscc-azure-event-driven-ml/churn-api:1.0.0` and `:sha-6fb916d19230cdd29fccffccdf3722704f1f8b25` (digest `sha256:7932660bde49aeeaffad67fd58f5609a80ab123b11b632d663a0f88adab3b3f8`) by [run 45880950088](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/45880950088). This proves **publication only**: Azure Container Apps deployment, `curl` from the Internet and scale-to-zero remain pending.
+The container runs as an unprivileged user and loads `/app/model/model-1.0.0.onnx`. [Run 45880950088](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/45880950088) historically published `1.0.0` and `:sha-6fb916d19230cdd29fccffccdf3722704f1f8b25` (digest `sha256:7932660bde49aeeaffad67fd58f5609a80ab123b11b632d663a0f88adab3b3f8`) from this branch. That run is a **branch publication proof only**, not an authorisation to distribute or deploy; those tags must not be treated as the `main` release. The current workflow publishes only `preview-<commit-sha>` and is manual/opt-in. Azure Container Apps deployment, `curl` from the Internet, scale-to-zero and the release publication from `main` remain pending.
 
 Set `APPLICATIONINSIGHTS_CONNECTION_STRING` to enable Azure Monitor OpenTelemetry; without it, telemetry is disabled and the API still runs. Other optional variables: `API_VERSION`, `MODEL_VERSION`, `MODEL_PATH`.
