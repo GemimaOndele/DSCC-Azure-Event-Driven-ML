@@ -36,3 +36,7 @@ Credit sufficiency for both student subscriptions is confirmed by the coordinato
 | Gémima / R3 | #23 d972d2d, run 45882157727 | Actionlint passed; integrated components absent on isolated branch; publication skipped |
 
 | Gémima / QA | #22 886ee85, run 45882194925 | Refreshed real ONNX integration: 2 passed, 2 warnings; 11 Azure acceptance scenarios prepared |
+
+| Gémima / QA | #22 1cccf50, run 45883033290 | 2 ONNX tests + 3 actual SDK tests with isolated Azurite, passed; first fixture attempt failed and was corrected |
+| Gémima / integration | #22 52103dd, run 45883107858 | 12 pairwise Git rehearsals: 5 conflict, 7 clean; no remote merge |
+| Gémima / CI | #23 783dac9, run 45882995776 | Actionlint passed; added API image size gate <500 MB and release digest evidence; component build/publish not executed on isolated branch |
