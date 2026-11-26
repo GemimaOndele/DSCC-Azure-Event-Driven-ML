@@ -4,7 +4,7 @@ from pathlib import Path
 import httpx
 import pytest
 
-from src.api_client import InferenceClient, PermanentInferenceError, TransientInferenceError
+from src.api_client import InferenceClient
 from src.config import Settings
 from src.service import RetryableWorkerError, dispatch, process, recent
 from tests.fakes import FakeQueue, InMemoryBlobStore, InMemoryResultStore
