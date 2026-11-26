@@ -55,5 +55,6 @@ Credit sufficiency for both student subscriptions is confirmed by the coordinato
 | Gémima / QA | #22 65c11e9, run 45884397493 | Sequential 10 PR preview, 103 tests passed, Ruff and guards passed |
 | Gémima / QA | #22 65c11e9, run 45884397529 | 2 ONNX + 3 Azurite tests passed |
 | Gémima / CI | #23 fdfc432, run 45884272396 | Integrated R4 jobs added; workflow CI success on isolated branch |
+| Gémima / release gate | #25 offline gate | All 45 PR pairs and 10 sequential merges clean on synchronized heads; local Docker build <500 MB; pins refreshed for current #14/#25 heads; no publication or deployment |
 
 No remote merge, real Azure resource operation or publication was performed by the coordinator. Remaining dataset/artifact permission, schema decision, human reviews and live cloud validation are explicit release gates.

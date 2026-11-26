@@ -20,6 +20,8 @@ jobs:
         with:
           python-version: '3.12'
       - name: Verify all pinned pairs and sequence
+        env:
+          PR25_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
         run: python tests/release/verify_conflict_gate.py
       - uses: actions/upload-artifact@v4
         if: always()

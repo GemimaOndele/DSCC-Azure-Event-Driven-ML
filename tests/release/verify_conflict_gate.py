@@ -1,6 +1,7 @@
 """Full conflict gate on immutable PR heads. No remote writes or cloud access."""
 import itertools
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -10,7 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 BASE = "fae1d192aad6a0b9c447fb74bfe33a5bbb82d9d0"
 HEADS = [
-    ("14", "867130942074a04d77805a47de5baa4cc3a3fd96"),
+    ("14", "a281fb8293378df22ac6ac87da246a21ea307817"),
     ("17", "8672dfdae562e1b2ce3344f9d913136f1c7ca651"),
     ("18", "3b489d114adbc9364a24b232fdc6504ee9eeaa58"),
     ("20", "e41209f8998c5979ba174fc7a2df9c9e2d0edd34"),
@@ -19,7 +20,9 @@ HEADS = [
     ("22", "65c11e9861824cb3f7e24b6e30ece48bf186a158"),
     ("23", "fdfc4325eb18c9e5bd95d26f25b307f956c9657c"),
     ("24", "a981b2626deab860139b143a6b4029ce56a7998d"),
-    ("25", "52786980409806d838b23d41d96d2b938068cd38"),
+    # The workflow passes the reviewed PR head so this self-referential PR is
+    # not validated against a stale pre-commit SHA.
+    ("25", os.environ.get("PR25_HEAD") or "c2a3ed941031a0134b58c195fc8e2a6273a9cc32"),
 ]
 PINS = dict(HEADS)
 

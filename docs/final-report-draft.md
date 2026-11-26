@@ -152,6 +152,7 @@ No customer values should be written to metrics labels or screenshots.
 | Local Azure SDK integration (Azurite) | Verified 3 tests, run 45883033290; Blob/Queue/Table, not Cosmos or Functions host |
 | Git pairwise integration rehearsal | Refreshed 12 pairs: 3 conflicts, 9 clean (45884397543), down from 5 conflicts |
 | Sequential integrated preview | 10 pinned PRs, 103 tests (15 API + 70 pipeline + 2 ONNX + 16 dashboard), Ruff and mocked R4 guards passed (45884397493) |
+| Full offline release gate | 45 pairwise merges and 10 sequential merges clean on synchronized heads; local Docker build < 500 MB; no remote merge, publication or Azure operation |
 | Azure E2E under 60 s | Not performed |
 | Rejection and poison queue in Azure | Not performed |
 | Dashboard, KQL, fired alert and email | Not performed |
