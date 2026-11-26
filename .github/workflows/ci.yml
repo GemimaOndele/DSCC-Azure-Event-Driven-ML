@@ -6,6 +6,11 @@ on:
       - 'model/**'
       - 'functions/**'
       - 'tests/e2e/**'
+      - 'web/**'
+      - 'tests/dashboard/**'
+      - 'tests/observability/**'
+      - 'infra/observability.sh'
+      - 'infra/trigger-alert.sh'
       - '.github/workflows/ci.yml'
       - '.github/workflows/deploy.yml'
   push:
@@ -141,8 +146,35 @@ jobs:
         with:
           name: integration-tests
           path: integration-tests.xml
+  dashboard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require dashboard tests on main
+        if: github.ref == 'refs/heads/main'
+        run: test -f tests/dashboard/test_data.cjs && test -f web/data.js
+      - uses: actions/setup-node@v4
+        if: hashFiles('tests/dashboard/test_data.cjs') != ''
+        with:
+          node-version: '22'
+      - name: Dashboard tests
+        if: hashFiles('tests/dashboard/test_data.cjs') != ''
+        run: node --check web/app.js && node --test tests/dashboard/test_data.cjs
+  observability:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require observability tests on main
+        if: github.ref == 'refs/heads/main'
+        run: test -f tests/observability/test_guards.sh
+      - name: Verify scripts against test doubles only
+        if: hashFiles('tests/observability/test_guards.sh') != ''
+        run: |
+          bash -n infra/observability.sh
+          bash -n infra/trigger-alert.sh
+          bash tests/observability/test_guards.sh
   publish:
-    needs: [workflow-lint, api, pipeline, training, integration]
+    needs: [workflow-lint, api, pipeline, training, integration, dashboard, observability]
     # The trained artifact has separate publication rights from the source data.
     # Retain human opt-in; do not infer authorization from a branch publication.
     if: github.ref == 'refs/heads/main' && vars.ENABLE_GHCR == 'true' && vars.MODEL_ARTIFACT_PUBLISH_APPROVED == 'true'
