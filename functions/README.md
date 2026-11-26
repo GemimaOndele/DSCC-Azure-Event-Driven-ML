@@ -12,7 +12,7 @@ Blob input/<fichier>.csv
   → dispatcher (validation .csv, ≤ 1 MiB, 22 colonnes)
   → Queue inference-requests
   → worker (POST /predict/batch, timeout 10 s, idempotence blobName+etag)
-  → Blob output/<fichier>.csv.json + Cosmos DB pipeline/inferences (repli Table Storage)
+  → Blob output/<fichier>.csv.<idempotencyKey>.json + Cosmos DB pipeline/inferences (repli Table Storage)
   → GET /api/recent (20 derniers) → tableau de bord statique $web
 ```
 
@@ -29,8 +29,7 @@ sans retry. Erreurs transitoires (429/5xx/timeout) : 5 livraisons max
   côté API). Les autres champs obligatoires ne peuvent pas être vides.
 - Message de file : `{"blobName","etag","size","enqueuedAt"}` exactement (contrat #14 §3).
 - Clé d'idempotence : `<stem>-<sha256(blobName|etag)[:16]>`, stable entre reprises et
-  sûre pour un `id` Cosmos DB. Le stockage `output/` vérifie la métadonnée
-  `idempotencykey` avant réécriture.
+  sûre pour un `id` Cosmos DB. Le stockage `output/` crée un objet immuable par version (écriture conditionnelle sans overwrite).
 - Métadonnées Cosmos : `id`, `fileName`, `timestamp`, `rows`, `atRisk`,
   `avgChurnProbability`, `modelVersion`, `durationMs`, `status`, `etag`, `idempotencyKey`.
 - `GET /api/recent` est anonyme mais n'expose l'en-tête CORS **que** pour l'origine
@@ -41,8 +40,7 @@ sans retry. Erreurs transitoires (429/5xx/timeout) : 5 livraisons max
 - `DefaultAzureCredential` partout (identité managée) : **aucune clé, mot de passe ou
   connection string** dans le dépôt. `UseDevelopmentStorage=true` dans l'exemple local
   est le compte well-known d'Azurite, pas un secret.
-- `api_client.py` ne journalise que le statut HTTP et 300 caractères du motif d'erreur,
-  jamais le corps complet (données clients).
+- `api_client.py` ne conserve que le statut HTTP, jamais le corps (données clients).
 - Le worker garde un seul client httpx par processus (`get_clients` mis en cache).
 
 ## Exécution locale
@@ -62,7 +60,7 @@ mémoire de `tests/fakes.py` et `httpx.MockTransport`.
 
 ## Tests couverts
 
-22 cas : contrat CSV (21 features, colonnes, types, bornes, `TotalCharges`, lignes vides,
+Cas : contrat CSV (21 features, colonnes, types, bornes, `TotalCharges`, lignes vides,
 limite de lignes), message de file et clé d'idempotence, classification HTTP permanent
 vs transitoire (dont timeout), dispatcher (acceptation/rejet), worker (succès, erreur
 permanente, erreur transitoire, doublon), et `/api/recent` (limite 20 + CORS).
@@ -76,3 +74,28 @@ permanente, erreur transitoire, doublon), et `/api/recent` (limite 20 + CORS).
   dispatcher (#7), son URL contenant une clé de fonction qui ne doit pas être commitée.
 
 Cette branche est une proposition de code en PR ; elle n'est ni approuvée ni déployée.
+
+
+## Integration proposal — 26 November
+
+- Both dispatcher and worker conditionally read the expected ETag. If the blob
+  was replaced/deleted, the old event is reported as superseded and never scores
+  the new bytes. This policy and the version-specific output filename need R2/R1
+  review in #14/#21. Use unique filenames for ingestion to avoid superseding uploads.
+- A create-only result blob is the canonical record. Concurrent deliveries may both
+  call inference, but only one persisted output wins. Cosmos metadata is rebuilt
+  from that same output, including after a crash before metadata persistence.
+  This is idempotent persistence, not exactly-once execution.
+- Cosmos point reads use partition key /fileName. The infrastructure must provision
+  that partition key. Table Storage fallback keeps numeric values and sorts timestamps
+  (small course demo only; scanning is not a production-scale design).
+- Queue sender Base64-encodes JSON for the default Azure Functions queue binding.
+  Cloud resources are pre-provisioned by R3; runtime adapters no longer create them.
+- API success payload is checked before writes; invalid JSON/schema is retryable.
+  CSV rejection messages omit cell values and unexpected header names. Use synthetic
+  filenames and inputs in evidence. A reason blob is still keyed by filename, so a later
+  rejection can replace an earlier reason; output results are version-specific.
+- CI: .github/workflows/ci-pipeline.yml runs offline tests on PR changes.
+  Real Azure SDK/binding behavior and poison queue require separate E2E proof.
+- This is not a deployed service. The SDK adapters use Azure endpoints and managed
+  identity; the offline tests use in-memory adapters, not an actual Azurite instance.
