@@ -34,3 +34,5 @@ Credit sufficiency for both student subscriptions is confirmed by the coordinato
 | Elias | GHCR run 45880950088, SHA 6fb916d | Branch image published, digest recorded in report; final deployment pending |
 | Gémima / R2 | #21 503280a, run 45882123936 | 70 tests + Ruff; customerID review addressed |
 | Gémima / R3 | #23 d972d2d, run 45882157727 | Actionlint passed; integrated components absent on isolated branch; publication skipped |
+
+| Gémima / QA | #22 886ee85, run 45882194925 | Refreshed real ONNX integration: 2 passed, 2 warnings; 11 Azure acceptance scenarios prepared |
