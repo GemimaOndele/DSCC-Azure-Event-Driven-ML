@@ -99,7 +99,7 @@ def process(
     """Run one queue message. Permanent errors reject, transient errors retry."""
     try:
         request = InferenceRequest.from_json(message_json)
-    except MessageError as exc:
+    except MessageError:
         # Invalid queue envelope is not a transient service failure.
         blobs.upload_rejected("unknown.csv", rejection_reason("unknown.csv", "Invalid queue message"))
         return {"status": "rejected", "reason": "Invalid queue message"}
