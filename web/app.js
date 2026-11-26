@@ -55,13 +55,7 @@
     // Mode simulé : jeu d'exemple + un fichier fictif ajouté à chaque
     // actualisation, pour montrer le rafraîchissement sans Azure.
     const sample = await fetchJson("sample-recent.json");
-    const results = sample.results.slice();
-    for (let i = 1; i <= mockTick; i += 1) {
-      results.unshift(simulatedResult(i));
-    }
-    mockTick += 1;
-    const limited = results.slice(0, sample.limit || 20);
-    return { count: limited.length, limit: sample.limit || 20, results: limited };
+    return window.DSCC_DATA.mockRecent(sample, mockTick++, simulatedResult);
   }
 
   function simulatedResult(index) {
@@ -82,30 +76,7 @@
 
   // ---------- Normalisation et agrégats ----------
 
-  function normalise(payload) {
-    if (!payload || !Array.isArray(payload.results)) {
-      throw new Error("Réponse inattendue : le champ « results » est absent.");
-    }
-    return payload.results
-      .filter((item) => item && typeof item === "object")
-      .map((item) => ({
-        id: String(item.id ?? ""),
-        fileName: String(item.fileName ?? item.blobName ?? "—"),
-        timestamp: item.timestamp ? new Date(item.timestamp) : null,
-        rows: toNumber(item.rows),
-        atRisk: toNumber(item.atRisk),
-        avgChurnProbability: toNumber(item.avgChurnProbability),
-        modelVersion: String(item.modelVersion ?? "—"),
-        durationMs: toNumber(item.durationMs),
-        status: String(item.status ?? "—"),
-      }))
-      .sort((a, b) => (b.timestamp?.getTime() || 0) - (a.timestamp?.getTime() || 0));
-  }
-
-  function toNumber(value) {
-    const n = Number(value);
-    return Number.isFinite(n) ? n : null;
-  }
+  const normalise = window.DSCC_DATA.normalise;
 
   function sum(items, key) {
     return items.reduce((total, item) => total + (item[key] ?? 0), 0);
@@ -117,9 +88,7 @@
     const rows = sum(items, "rows");
     const atRisk = sum(items, "atRisk");
     // Moyenne pondérée par le nombre de clients de chaque fichier.
-    const weighted = items.reduce(
-      (total, item) => total + (item.avgChurnProbability ?? 0) * (item.rows ?? 0), 0
-    );
+    const weighted = window.DSCC_DATA.weightedProbability(items);
     const durations = items.map((item) => item.durationMs).filter((d) => d !== null);
     const versions = [...new Set(items.map((item) => item.modelVersion))];
 
@@ -127,7 +96,7 @@
     $("kpi-rows").textContent = numberFmt.format(rows);
     $("kpi-risk").textContent = numberFmt.format(atRisk);
     $("kpi-risk-rate").textContent = rows ? `${percentFmt.format(atRisk / rows)} des clients` : "";
-    $("kpi-proba").textContent = rows ? percentFmt.format(weighted / rows) : "—";
+    $("kpi-proba").textContent = weighted !== null ? percentFmt.format(weighted) : "—";
     $("kpi-duration").textContent = durations.length
       ? `${numberFmt.format(Math.round(durations.reduce((a, b) => a + b, 0) / durations.length))} ms`
       : "—";
@@ -181,7 +150,7 @@
       const line = styles.getPropertyValue("--accent").trim();
       window.Chart.defaults.color = styles.getPropertyValue("--muted").trim();
       window.Chart.defaults.borderColor = styles.getPropertyValue("--border").trim();
-      chart =new window.Chart($("risk-chart"), {
+      chart = new window.Chart($("risk-chart"), {
         data: {
           labels,
           datasets: [
