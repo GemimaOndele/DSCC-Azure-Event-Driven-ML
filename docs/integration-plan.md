@@ -56,3 +56,27 @@ After each approved merge, update dependent branches before the next review,
 check exact SHA and CI, and verify any stale approval. Only delete an integrated
 branch after verifying its commits and no outstanding dependencies; no automatic
 deletion is performed here. Keep main protected.
+
+## Executed pairwise Git rehearsal — 26 November
+
+GitHub Actions run 45883107858, job 140127055235, QA branch SHA 52103dd.
+`git merge-tree --write-tree --name-only --no-messages` was run on 12 pinned pairs in a disposable runner. HEAD and working tree remained unchanged. No refs or PRs were merged. The JSON artifact records every exact input SHA. Outcome: five conflicting pairs and seven clean pairs.
+
+| Pair | Result | Conflicting paths |
+|---|---|---|
+| #14 / #17 | conflict | README.md |
+| #14 / #18 | conflict | .gitignore, README.md |
+| #14 / #20 | conflict | README.md |
+| #17 / #18 | conflict | README.md, model/features.json |
+| #17 / #20 | clean | — |
+| #18 / #20 | conflict | .github/workflows/ci-ml.yml, README.md, model/features.json |
+| #17 / #21 | clean | — |
+| #18 / #21 | clean | — |
+| #19 / #21 | clean | — |
+| #20 / #24 | clean | — |
+| #23 / #24 | clean | — |
+| #21 / #25 | clean | — |
+
+Resolve README by retaining verified routes, new test evidence and final release status. Keep the union of ignore rules. Do not select feature schema or dataset metadata independently of the team's final decision. Preserve the final API/telemetry behavior and align the branch CI with #23. Rerun conflict rehearsal after head changes. Pairwise clean merges are not proof of sequential or runtime compatibility.
+
+Run: https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/45883107858
