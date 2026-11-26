@@ -21,7 +21,8 @@ def test_round_trip() -> None:
 
 
 def test_idempotency_key_is_stable_and_version_scoped() -> None:
-    make = lambda data: InferenceRequest.from_json(json.dumps(data))
+    def make(data):
+        return InferenceRequest.from_json(json.dumps(data))
     first = make(RAW).idempotency_key
     assert first == make(RAW).idempotency_key
     assert first != make({**RAW, "etag": "0x8DCB2"}).idempotency_key
