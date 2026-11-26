@@ -62,6 +62,7 @@ def storage(monkeypatch):
     from azure.storage.blob import BlobServiceClient
     from azure.storage.queue import QueueServiceClient
     from azure.data.tables import TableServiceClient
+    from azure.core.credentials import AzureNamedKeyCredential
 
     blob_sdk = BlobServiceClient(
         account_url=f"http://127.0.0.1:10000/{ACCOUNT}",
@@ -77,7 +78,7 @@ def storage(monkeypatch):
     )
     table_sdk = TableServiceClient(
         endpoint=f"http://127.0.0.1:10002/{ACCOUNT}",
-        credential=KEY,
+        credential=AzureNamedKeyCredential(ACCOUNT, KEY),
         retry_total=0,
     )
     suffix = uuid.uuid4().hex[:10]
