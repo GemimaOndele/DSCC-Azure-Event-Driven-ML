@@ -9,7 +9,7 @@ from typing import Any
 
 from .api_client import InferenceClient
 from .config import Settings
-from .ports import BlobStore, QueueSender, ResultStore
+from .ports import BlobStore, QueueSender, ResultStore, StaleBlobVersionError
 
 LOGGER = logging.getLogger("dscc.pipeline.azure")
 
@@ -31,12 +31,31 @@ class AzureBlobStore:
             except ResourceExistsError:
                 pass
 
-    def download(self, name: str) -> bytes:
-        return (
-            self._service.get_blob_client(self._names["input"], name)
-            .download_blob()
-            .readall()
-        )
+    def download(self, name: str, *, etag: str) -> bytes:
+        from azure.core import MatchConditions
+        from azure.core.exceptions import ResourceModifiedError, ResourceNotFoundError, HttpResponseError
+
+        quoted = etag if etag.startswith('"') else f'"{etag}"'
+        try:
+            return self._service.get_blob_client(self._names["input"], name).download_blob(
+                etag=quoted, match_condition=MatchConditions.IfNotModified
+            ).readall()
+        except (ResourceModifiedError, ResourceNotFoundError) as exc:
+            raise StaleBlobVersionError("Input version is no longer available") from exc
+        except HttpResponseError as exc:
+            if exc.status_code == 412:
+                raise StaleBlobVersionError("Input version is no longer available") from exc
+            raise
+
+    def _output_client(self, name: str, key: str):
+        return self._service.get_blob_client(self._names["output"], f"{name}.{key}.json")
+
+    def read_output(self, name: str, *, idempotency_key: str) -> dict[str, Any] | None:
+        from azure.core.exceptions import ResourceNotFoundError
+        try:
+            return json.loads(self._output_client(name, idempotency_key).download_blob().readall())
+        except ResourceNotFoundError:
+            return None
 
     def upload_rejected(self, name: str, reason: dict[str, Any]) -> str:
         blob_name = f"{name}.reason.json"
@@ -50,20 +69,18 @@ class AzureBlobStore:
     def upload_output(
         self, name: str, payload: dict[str, Any], *, idempotency_key: str
     ) -> bool:
-        client = self._service.get_blob_client(
-            self._names["output"], f"{name}.json"
-        )
-        if client.exists():
-            existing = client.get_blob_properties().metadata or {}
-            if existing.get("idempotencykey") == idempotency_key:
-                return False
-        client.upload_blob(
-            json.dumps(payload, ensure_ascii=False, indent=2),
-            overwrite=True,
-            content_type="application/json",
-            metadata={"idempotencykey": idempotency_key},
-        )
-        return True
+        from azure.core.exceptions import ResourceExistsError
+        client = self._output_client(name, idempotency_key)
+        try:
+            client.upload_blob(
+                json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False),
+                overwrite=False,
+                content_type="application/json",
+                metadata={"idempotencykey": idempotency_key},
+            )
+            return True
+        except ResourceExistsError:
+            return False
 
 
 class AzureQueueSender:
@@ -97,10 +114,11 @@ class CosmosResultStore:
     def upsert(self, metadata: dict[str, Any]) -> None:
         self._container.upsert_item(metadata)
 
-    def exists(self, idempotency_key: str) -> bool:
+    def exists(self, idempotency_key: str, *, file_name: str) -> bool:
+        from azure.cosmos.exceptions import CosmosResourceNotFoundError
         try:
-            self._container.read_item(idempotency_key, partition_key=idempotency_key)
-        except Exception:  # CosmosResourceNotFoundError
+            self._container.read_item(idempotency_key, partition_key=file_name)
+        except CosmosResourceNotFoundError:
             return False
         return True
 
@@ -135,20 +153,21 @@ class TableResultStore:
         entity = {
             "PartitionKey": "inference",
             "RowKey": metadata["idempotencyKey"],
-            **{key: str(value) for key, value in metadata.items()},
+            **metadata,
         }
         self._table.upsert_entity(entity)
 
-    def exists(self, idempotency_key: str) -> bool:
+    def exists(self, idempotency_key: str, *, file_name: str) -> bool:
+        from azure.core.exceptions import ResourceNotFoundError
         try:
             self._table.get_entity("inference", idempotency_key)
-        except Exception:  # ResourceNotFoundError
+        except ResourceNotFoundError:
             return False
         return True
 
     def recent(self, limit: int) -> list[dict[str, Any]]:
-        entities = self._table.list_entities(results_per_page=limit)
-        items = list(entities)[:limit]
+        entities = self._table.query_entities("PartitionKey eq 'inference'", results_per_page=limit)
+        items = sorted(entities, key=lambda x: x.get("timestamp", ""), reverse=True)[:limit]
         return _project(
             [
                 {key: value for key, value in item.items() if not key.startswith("odata")}
