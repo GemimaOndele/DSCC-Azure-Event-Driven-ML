@@ -1,80 +1,109 @@
-# DSCC-Azure-Event-Driven-ML
+# DSCC — Azure Event-Driven Machine Learning
 
-Event-driven Telecom Customer Churn prediction pipeline on Microsoft Azure, featuring serverless computing, distributed systems, observability and CI/CD.
+ECE Paris · MSc 2 Artificial Intelligence · Distributed Systems and Cloud Computing in AI  
+Team: Gémima ONDELE POUROU, Yaye Aminata DIAGNE, Elias CREMNITER, Omar KRARTI  
+Defense: 2 December 2026.
 
-> **Status:** the model (`feat/ml-training`, PR #18) and the inference API (`feat/ml-api`, PR #17) are proposed in open pull requests. They are **not merged into `main` nor deployed**. Issues #4 and #5 stay open until acceptance checks, merge and GHCR publication proof. The audit notes are not approvals.
+> Shared integration README, proposed for review. The feature branches are not yet merged or deployed.
+> Final feature selection and dataset/artifact authorization remain pending.
 
-## Model and training
+## Purpose
 
-The versioned churn model `1.0.0` is trained locally with:
+Score telecom attrition risk from small CSV batches using a serverless,
+queue-decoupled machine learning pipeline with reliable persistence, observability,
+CI/CD and controlled costs.
 
+```mermaid
+flowchart LR
+  B[Blob input] --> E[Event Grid] --> D[Dispatcher]
+  D --> Q[Storage Queue] --> W[Worker]
+  D --> R[Rejected reasons]
+  Q --> P[Poison Queue]
+  W --> A[FastAPI ONNX]
+  W --> O[Versioned result Blob]
+  W --> C[Cosmos / approved Table fallback]
+  C --> H[Recent endpoint]
+  H --> S[Dashboard]
+  A -.-> M[Application Insights / Log Analytics]
+  W -.-> M
+```
+
+## Component and evidence map
+
+| Domain | Source | Current review |
+|---|---|---|
+| Project organization | docs/project-overview.md; docs/technical-contract.md | #14 |
+| Azure access | docs/azure-access-guide.md | #15 merged |
+| ML API | api/; model/features.json | #17 |
+| Training and provenance | model/DATASET.md; model/FEATURE_RISK_ANALYSIS.md; model/TRAINING_EVIDENCE.md | #18 |
+| Event pipeline | functions/README.md; functions/src/ | #21 |
+| Dashboard | web/README.md | #19 |
+| Monitoring | docs/observability/README.md | #20 |
+| QA | tests/e2e/README.md | #22 |
+| CI/CD | .github/workflows/ci.yml; deploy.yml | #23 |
+| Azure IaC | infra/DEPLOYMENT.md | #24 |
+| Report and release evidence | docs/final-report-draft.md; docs/integration-plan.md; docs/evidence-register.md | #25 |
+
+## Model and API
+
+The existing model is logistic regression exported to ONNX (1.0.0), stratified
+80/20 split with seed 42, median imputation, scaling and one-hot encoding.
+The current preview uses 21 predictive inputs, excluding customerID and Churn.
+The two ticket counters have no demonstrated pre-churn availability. Reported
+ablation: 21 features AUC 0.9273/F1 0.7328; 19 features AUC 0.8413/F1 0.6136.
+Neither the 21/19 selection nor the case workbook and derivative publication
+rights is finalized by this README. Do not fetch the workbook or publish an
+artifact without appropriate permission. The case workbook is not the raw IBM
+dataset. See model/DATASET.md and model/FEATURE_RISK_ANALYSIS.md.
+
+Run the existing model offline with synthetic inputs only:
 ```bash
-py -3.12 model\train.py
+python -m pip install -r api/requirements-dev.txt
+python -m uvicorn api.main:app --host 127.0.0.1 --port 8000
 ```
 
-- Authoritative input contract: [`model/features.json`](model/features.json) — **21 features**, `customerID` used only as an identifier, `Churn` never sent to the API.
-- `TotalCharges` is coerced to numeric; blank cells are median-imputed inside the pipeline (no manual imputation before the split).
-- Stratified 80/20 split, fixed seed `42`, logistic regression with `class_weight="balanced"`, decision threshold `0.5`.
-- Metrics, baseline comparison and reproducibility evidence are produced in `model/metrics.json`; the protocol and the held-out test split are described in the PR #18 evidence (`model/TRAINING_EVIDENCE.md` on `feat/ml-training`).
-- Dataset provenance/licence: IBM Telco Customer Churn sample (fictional customers), distributed via Kaggle as `blastchar/telco-customer-churn` ("Data files © Original Authors"); details in `model/DATASET.md` on `feat/ml-training`. No secret or real personal data.
+Routes: GET /health, GET /version, GET /metrics, POST /predict (single),
+POST /predict/batch ({"rows":[...]}). Construct the exact feature set from
+model/features.json. See tests/e2e/test_pipeline.py for synthetic examples.
+Do not pass customerID as a feature or Churn in the inference request.
 
-## Inference API
+## Reliability and security
 
-Install `api\requirements-dev.txt` and start locally:
+Conditional ETag reads, validated CSV, one immutable output per blobName+ETag,
+metadata recovery, bounded five queue deliveries and poison queue.
+Concurrent duplicate delivery may trigger more than one inference call;
+persisted results are idempotent, not exactly-once execution. No raw customer
+values in rejection reasons. Managed identity and scoped RBAC; no shared
+passwords or keys. Public endpoints require explicit temporary synthetic-demo
+approval; CORS is not authentication.
 
+## Verification
+
+Run the following separately in Python 3.12 from the repository root after
+approved integration:
 ```bash
-py -3.12 -m uvicorn api.main:app --reload
+python -m pip install -r api/requirements-dev.txt -r functions/requirements.txt ruff==0.9.10
+python -m ruff check api functions
+python -m pytest api/tests -q
+python -m pytest functions/tests -q
+python -m pytest tests/e2e/test_pipeline.py -q
+node --test tests/dashboard/test_data.cjs
+bash tests/observability/test_guards.sh
 ```
+The last script uses mock commands only; no alert or Azure resources created.
+See QA workflow for isolated Azurite SDK tests and conflict rehearsal. Training
+tests may fetch the case data; do not run them without authorization.
 
-Endpoints: `GET /health`, `GET /version`, `POST /predict` (one client), `POST /predict/batch` (multi-client CSV) and `GET /metrics`.
+## Deployment and cost
 
-Unit request (backward compatible with PR #17):
+One selected Azure for Students subscription, maximum budget USD 25 (internal
+target under USD 5), approved region/quotas, one project RG, budget alerts at
+20/50/80%. Credits are sufficient on both student subscriptions per coordinator;
+selection and actual deployment still require owner validation.
+Use infra/DEPLOYMENT.md, Bicep what-if then explicitly approved provisioning.
+GHCR branch publication is not a final release. Main publication and Azure
+deployment require artifact approval and explicit gates. Record real deployment,
+E2E, alerts, actual costs and eventual authorized cleanup before closing tickets.
 
-```json
-{"customerID": "7590-VHVEG", "gender": "Female", "SeniorCitizen": 0, "...": "20 other model features"}
-```
-
-Batch request — the contract #14 option A chosen for the dispatcher/worker. Each item is one CSV row; `customerID` is echoed in the response:
-
-```json
-{
-  "rows": [
-    {"customerID": "7590-VHVEG", "gender": "Female", "SeniorCitizen": 0, "...": "20 other model features"},
-    {"customerID": "5575-GNVDE", "gender": "Male", "SeniorCitizen": 0, "...": "20 other model features"}
-  ]
-}
-```
-
-```json
-{
-  "model_version": "1.0.0",
-  "latency_ms": 12.3,
-  "predictions": [
-    {"customerID": "7590-VHVEG", "prediction": "Yes", "label": 1, "churn_probability": 0.73, "confidence": 0.73}
-  ],
-  "summary": {"rows": 50, "atRisk": 12, "avgChurnProbability": 0.31, "threshold": 0.5, "model_version": "1.0.0"}
-}
-```
-
-`GET /metrics` reports `inference_calls` (**HTTP inference requests**, one batch = one call), `inferred_rows` (**clients actually predicted**, `len(rows)` per batch; name to be confirmed with Omar for KQL/alerts) and average ONNX latency. Input hardening: unknown/extra fields and unknown categories are rejected with `422`, numeric ranges and finite values are enforced, blank strings and control characters are rejected, and batches are capped at `MAX_BATCH_ROWS = 10000` (larger than a 1 MiB CSV can hold per contract #14).
-
-## Tests and CI
-
-```bash
-py -3.12 -m pytest api\tests -q
-py -3.12 -m pytest model\tests -q   # on feat/ml-training
-```
-
-Pull requests run the workflows `.github/workflows/ci-ml-api.yml` (pytest + Docker build) and `.github/workflows/ci-ml-training.yml` (pytest + reproducible retraining). Local results and the Docker image size are recorded in the PR descriptions.
-
-## Container
-
-Build the multi-stage image from the repository root:
-
-```bash
-docker build -f api\Dockerfile -t churn-ml-api:1.0.0 .
-```
-
-The container runs as an unprivileged user and loads `/app/model/model-1.0.0.onnx`. Publishing the image to GHCR is tracked by issue #8 and is **not** included in these PRs; issue #5 must not be closed before that proof exists.
-
-Set `APPLICATIONINSIGHTS_CONNECTION_STRING` to enable Azure Monitor OpenTelemetry; without it, telemetry is disabled and the API still runs. Other optional variables: `API_VERSION`, `MODEL_VERSION`, `MODEL_PATH`.
+Current evidence: see docs/evidence-register.md and the PR CI logs; no unverified
+cloud claim. Team board: https://github.com/users/GemimaOndele/projects/5.
