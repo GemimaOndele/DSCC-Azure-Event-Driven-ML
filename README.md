@@ -65,7 +65,7 @@ py -3.12 -m pytest api\tests -q
 py -3.12 -m pytest model\tests -q   # on feat/ml-training
 ```
 
-Pull requests run the workflows `.github/workflows/ci-ml-api.yml` (pytest + Docker build) and `.github/workflows/ci-ml-training.yml` (pytest + reproducible retraining). Local results and the Docker image size are recorded in the PR descriptions.
+Pull requests use the single workflow `.github/workflows/ci-ml.yml`: job `api-tests` (ruff, pytest, Docker build, <500 MB image gate) on `feat/ml-api`, and job `training-tests` (ruff + reproducibility tests) on `feat/ml-training`. GHCR publication is handled by `.github/workflows/publish-api.yml` on `feat/ml-api`. Evidence: [CI run 45880949925](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/45880949925) and [publish run 45880950088](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/45880950088).
 
 ## Container
 
@@ -75,6 +75,6 @@ Build the multi-stage image from the repository root:
 docker build -f api\Dockerfile -t churn-ml-api:1.0.0 .
 ```
 
-The container runs as an unprivileged user and loads `/app/model/model-1.0.0.onnx`. Publishing the image to GHCR is tracked by issue #8 and is **not** included in these PRs; issue #5 must not be closed before that proof exists.
+The container runs as an unprivileged user and loads `/app/model/model-1.0.0.onnx`. It is published to GHCR as `ghcr.io/gemimaondele/dscc-azure-event-driven-ml/churn-api:1.0.0` and `:sha-6fb916d19230cdd29fccffccdf3722704f1f8b25` (digest `sha256:7932660bde49aeeaffad67fd58f5609a80ab123b11b632d663a0f88adab3b3f8`) by [run 45880950088](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/45880950088). This proves **publication only**: Azure Container Apps deployment, `curl` from the Internet and scale-to-zero remain pending.
 
 Set `APPLICATIONINSIGHTS_CONNECTION_STRING` to enable Azure Monitor OpenTelemetry; without it, telemetry is disabled and the API still runs. Other optional variables: `API_VERSION`, `MODEL_VERSION`, `MODEL_PATH`.
