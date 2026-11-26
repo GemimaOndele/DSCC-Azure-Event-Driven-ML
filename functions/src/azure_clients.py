@@ -16,7 +16,6 @@ LOGGER = logging.getLogger("dscc.pipeline.azure")
 
 class AzureBlobStore:
     def __init__(self, account_name: str, containers: dict[str, str]) -> None:
-        from azure.core.exceptions import ResourceExistsError
         from azure.identity import DefaultAzureCredential
         from azure.storage.blob import BlobServiceClient
 
@@ -25,11 +24,6 @@ class AzureBlobStore:
             credential=DefaultAzureCredential(),
         )
         self._names = containers
-        for container in containers.values():
-            try:
-                self._service.create_container(container)
-            except ResourceExistsError:
-                pass
 
     def download(self, name: str, *, etag: str) -> bytes:
         from azure.core import MatchConditions
@@ -58,11 +52,12 @@ class AzureBlobStore:
             return None
 
     def upload_rejected(self, name: str, reason: dict[str, Any]) -> str:
+        from azure.storage.blob import ContentSettings
         blob_name = f"{name}.reason.json"
         self._service.get_blob_client(self._names["rejected"], blob_name).upload_blob(
             json.dumps(reason, ensure_ascii=False, indent=2),
             overwrite=True,
-            content_type="application/json",
+            content_settings=ContentSettings(content_type="application/json"),
         )
         return blob_name
 
@@ -70,12 +65,13 @@ class AzureBlobStore:
         self, name: str, payload: dict[str, Any], *, idempotency_key: str
     ) -> bool:
         from azure.core.exceptions import ResourceExistsError
+        from azure.storage.blob import ContentSettings
         client = self._output_client(name, idempotency_key)
         try:
             client.upload_blob(
                 json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False),
                 overwrite=False,
-                content_type="application/json",
+                content_settings=ContentSettings(content_type="application/json"),
                 metadata={"idempotencykey": idempotency_key},
             )
             return True
@@ -85,19 +81,16 @@ class AzureBlobStore:
 
 class AzureQueueSender:
     def __init__(self, account_name: str, queue_name: str = "inference-requests") -> None:
-        from azure.core.exceptions import ResourceExistsError
         from azure.identity import DefaultAzureCredential
-        from azure.storage.queue import QueueServiceClient
+        from azure.storage.queue import QueueServiceClient, TextBase64EncodePolicy
 
         self._service = QueueServiceClient(
             account_url=f"https://{account_name}.queue.core.windows.net",
             credential=DefaultAzureCredential(),
         )
-        try:
-            self._service.create_queue(queue_name)
-        except ResourceExistsError:
-            pass
-        self._queue = self._service.get_queue_client(queue_name)
+        self._queue = self._service.get_queue_client(
+            queue_name, message_encode_policy=TextBase64EncodePolicy()
+        )
 
     def send_message(self, text: str) -> None:
         self._queue.send_message(text)
@@ -147,7 +140,7 @@ class TableResultStore:
             endpoint=f"https://{account_name}.table.core.windows.net",
             credential=DefaultAzureCredential(),
         )
-        self._table = service.create_table_if_not_exists(table)
+        self._table = service.get_table_client(table)
 
     def upsert(self, metadata: dict[str, Any]) -> None:
         entity = {
