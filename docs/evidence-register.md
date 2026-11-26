@@ -11,6 +11,7 @@ The 26 November entry below records repository actions, not inferred personal ho
 | 24 Nov | Gémima + Aminata | Azure access guide | PR #15, merge fae1d19 | Merged, not deployed |
 | 26 Nov | Gémima / R2 | Pipeline hardening and test workflow | PR #21, SHA 192e4c0, Actions 45878414101 | 61 offline tests passed |
 | 26 Nov | Gémima / QA, R3 | E2E preview, CI/CD and preflight preparation | Branches test/e2e-scenarios, ci/github-actions, infra/azure-core | Prepared; cloud not run |
+| 26 Nov | Gémima / QA | Real ONNX offline integration preview | PR #22, Actions 45878841099 | 2 passed, 2 warnings; no cloud |
 | TBD | All | Azure integration and acceptance | Issue #11 | Pending |
 | TBD | All | Report, rehearsal, delivery | Issue #12 | Pending |
 
