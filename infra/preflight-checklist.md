@@ -1,8 +1,6 @@
 # Azure preflight and approval checklist — #3 / #7 / #8
 
-Prepared 26 November 2026. **No Azure resources created; no verified live balance,
-quota, subscription selection or region.** Run the read-only script in the owner's
-authenticated Cloud Shell, separately for both student subscriptions.
+Prepared 26 November 2026. The project coordinator confirms that both Gémima and Aminata have sufficient Azure for Students credits, based on previously shared evidence. Treat credit sufficiency as a team-confirmed input; do not request the same screenshots again. **No live balance, quota, selected subscription or region has been independently inspected in this intervention. No Azure resource created.** Run the read-only preflight in the selected owner's authenticated Cloud Shell.
 
 ```bash
 bash infra/preflight-readonly.sh
@@ -12,7 +10,7 @@ Record only non-sensitive results in the team evidence register:
 
 | Control | Gémima | Aminata | Decision/evidence |
 |---|---|---|---|
-| Remaining Azure for Students credit and expiry | Pending | Pending | Portal |
+| Credit sufficiency | Confirmed by coordinator | Confirmed by coordinator | Previously shared evidence; no new balance asserted |
 | Allowed regions including inherited policy | Pending | Pending | Policy assignment / Resource Graph |
 | Flex Consumption Python 3.12 and quota | Pending | Pending | CLI + quota portal |
 | Container Apps consumption capacity / quota | Pending | Pending | Portal |
@@ -22,6 +20,8 @@ Record only non-sensitive results in the team evidence register:
 | Chosen region and deployment date | Pending | Pending | Team decision |
 
 ## Proposed resource inventory (not deployed)
+
+Bicep implementation: infra/base.bicep and infra/apps.bicep; see infra/DEPLOYMENT.md. The templates are prepared for team review; compilation does not prove Azure regional availability or actual costs.
 - One tagged resource group. Cosmos DB Free Tier first if eligible, partition
   key /fileName and database pipeline / container inferences; Table Storage
   fallback only after explicit decision.
