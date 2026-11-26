@@ -136,10 +136,9 @@ provisioned automatically by this draft.
 
 The static dashboard targets GET /api/recent, refreshes every 30 seconds, and
 shows file/customer counts, risk, mean probability, latency and model version.
-PR #19 remains under correction. PR #20 adds OpenTelemetry metrics:
+PR #19 now includes strict payload validation and 16 passing Node tests. PR #20 adds OpenTelemetry metrics:
 inferred_rows, inference_latency_ms, inference_requests and inference_errors,
-plus KQL and email alert logic. Its existing CI was skipped; local test claims
-must be replaced with actual integrated CI and Azure telemetry evidence.
+plus KQL and email alert logic. Dedicated R4 CI now passes 15 API tests, Ruff, Docker and offline command guards (45884243968); these overlap the R1 tests and are not extra unique tests. Cloud telemetry evidence remains pending. The R4 alert script reuses existing R3 resources and requires explicit owner consent.
 No customer values should be written to metrics labels or screenshots.
 
 ## 9. Testing and evidence
@@ -151,7 +150,8 @@ No customer values should be written to metrics labels or screenshots.
 | Pipeline PR #21 CI | Verified 70 offline tests and Ruff passed |
 | Integrated real-ONNX pipeline | Refreshed preview: 2 passed, 2 warnings, run 45882194925; pinned API 69cf39c and pipeline 503280a; no Azure |
 | Local Azure SDK integration (Azurite) | Verified 3 tests, run 45883033290; Blob/Queue/Table, not Cosmos or Functions host |
-| Git pairwise integration rehearsal | 12 pairs checked; 5 conflicts, 7 clean; run 45883107858 |
+| Git pairwise integration rehearsal | Refreshed 12 pairs: 3 conflicts, 9 clean (45884397543), down from 5 conflicts |
+| Sequential integrated preview | 10 pinned PRs, 103 tests (15 API + 70 pipeline + 2 ONNX + 16 dashboard), Ruff and mocked R4 guards passed (45884397493) |
 | Azure E2E under 60 s | Not performed |
 | Rejection and poison queue in Azure | Not performed |
 | Dashboard, KQL, fired alert and email | Not performed |
