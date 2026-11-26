@@ -80,3 +80,9 @@ GitHub Actions run 45883107858, job 140127055235, QA branch SHA 52103dd.
 Resolve README by retaining verified routes, new test evidence and final release status. Keep the union of ignore rules. Do not select feature schema or dataset metadata independently of the team's final decision. Preserve the final API/telemetry behavior and align the branch CI with #23. Rerun conflict rehearsal after head changes. Pairwise clean merges are not proof of sequential or runtime compatibility.
 
 Run: https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/45883107858
+
+## Refreshed rehearsal and proposed resolution — 26 November
+
+After moving the #14 overview to docs/project-overview.md and restoring its root README to main, pairwise conflicts dropped from five pairs to three, with nine clean pairs (run 45884397543, QA head 65c11e9). Remaining pairs: #14/#18 (.gitignore); #17/#18 (README.md, model/features.json); #18/#20 (ci-ml.yml, README.md, model/features.json). The latter does not conflict in the proposed sequence after #17.
+
+Sequential preview run 45884397493 assembled all ten pinned PRs in a detached disposable worktree: #14 → #17 → #18 → #20 → #21 → #19 → #22 → #23 → #24 → #25. Only #18 needed resolution of .gitignore, README.md and model/features.json. For this preview, the #14 union of ignore rules, #17 API code/CI, #18 schema metadata (same 21 inputs), and proposed docs/release-readme.md were preserved. 15 API tests, 70 pipeline tests, 2 real ONNX integration tests, 16 dashboard tests and the R4 mocked CLI guards passed. Ruff passed; no training download or cloud operations. The exact pins and resolved paths are in the sequential-preview artifact. No remote PR merged. The schema choice is provisional, not team approval. For actual integration obtain independent review and resolve the remaining three files on the appropriate branch, rerun CI on each updated head, and re-check dataset/artifact authorization.
