@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   deploy:
-    if: github.ref == 'refs/heads/main' && inputs.confirmation == 'DEPLOY-DSCC' && vars.AZURE_DEPLOY_ENABLED == 'true' && vars.DATASET_USE_APPROVED == 'true' && vars.ENABLE_GHCR == 'true'
+    if: github.ref == 'refs/heads/main' && inputs.confirmation == 'DEPLOY-DSCC' && vars.AZURE_DEPLOY_ENABLED == 'true' && vars.MODEL_ARTIFACT_PUBLISH_APPROVED == 'true' && vars.ENABLE_GHCR == 'true'
     environment: production
     runs-on: ubuntu-latest
     timeout-minutes: 25
