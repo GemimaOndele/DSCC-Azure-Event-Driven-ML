@@ -261,3 +261,13 @@ def test_rejection_does_not_expose_raw_cell_values():
     assert outcome["status"] == "rejected"
     assert "PRIVATE-CELL" not in outcome["reason"]
     assert b"PRIVATE-CELL" not in next(iter(blobs.containers["rejected"].values()))[0]
+
+
+@pytest.mark.parametrize("bad_id", ["7590 VHVEG", "a/b"])
+def test_dispatch_rejects_bad_id_before_queue(bad_id):
+    data = FIXTURE.read_bytes().replace(b"7590-VHVEG", bad_id.encode(), 1)
+    blobs, queue = InMemoryBlobStore({"batch_01.csv": data}), FakeQueue()
+    outcome = dispatch({**EVENT, "size": len(data)}, settings=SETTINGS, blobs=blobs, queue=queue)
+    assert outcome["status"] == "rejected" and not queue.messages
+    assert "invalid customerID" in outcome["reason"]
+    assert bad_id.encode() not in next(iter(blobs.containers["rejected"].values()))[0]
