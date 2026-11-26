@@ -6,6 +6,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  pull-requests: read
 jobs:
   integration-gate:
     if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.head.ref == 'ci/github-actions' && github.event.pull_request.head.repo.full_name == github.repository)
