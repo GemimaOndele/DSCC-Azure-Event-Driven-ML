@@ -6,15 +6,15 @@ from pathlib import Path
 
 # Immutable reviewed snapshot. Refresh explicitly if any PR advances.
 HEADS = {
-    "#14": "ae233dfc5a19927eb809a3ee47b3898464901861",
-    "#17": "69cf39c3fae9dbc61f5621af56ee92a4e70cf12e",
+    "#14": "867130942074a04d77805a47de5baa4cc3a3fd96",
+    "#17": "5886584331997d5b1b5fae7f6602c58d876f0221",
     "#18": "3cb9ffe327abdd68a58cd2c9d23a6797ee2f5bf9",
-    "#19": "59bbe8ce59b6f81f57bbc68dc46d5b20f2176a3f",
-    "#20": "f2d215ccc7aca852323c320fbeab187794e42b37",
+    "#19": "2f57b6495f5f434a1e26985e7333b9439f0c5048",
+    "#20": "b81277f6d66a1d9e2b503e6fc54e7200732eb01f",
     "#21": "503280aa3a03ea74bcf33b913c5999de39a8d93f",
-    "#23": "783dac9e685a78743313fb7e4ba3c4df9ad809e4",
+    "#23": "fdfc4325eb18c9e5bd95d26f25b307f956c9657c",
     "#24": "a981b2626deab860139b143a6b4029ce56a7998d",
-    "#25": "b738eaaa488c1a6e1b29585bc6272860728987b6",
+    "#25": "c2ac5cb11cf7b5ac010611bd689098895021da75",
 }
 PAIRS = [
     ("#14", "#17"), ("#14", "#18"), ("#14", "#20"),
