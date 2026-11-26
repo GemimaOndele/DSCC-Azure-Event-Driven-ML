@@ -15,6 +15,8 @@ from .config import Settings
 FEATURES_PATH = Path(__file__).resolve().parents[1] / "contract" / "features.json"
 MAX_REJECTED_ERRORS = 10
 BLOB_NAME_PATTERN = re.compile(r"^[A-Za-z0-9._-]+$")
+# Keep in sync with CustomerFeatures.customerID in the API (#17).
+CUSTOMER_ID_PATTERN = re.compile(r"^[A-Za-z0-9._-]+$")
 
 
 class CsvContractError(ValueError):
@@ -135,8 +137,8 @@ def parse_csv(
         parsed: dict[str, Any] = {}
         for name, raw_value in raw_row.items():
             if name == identifier:
-                customer_id = (raw_value or "").strip()
-                if not customer_id or len(customer_id) > 64 or any(ord(c) < 32 or ord(c) == 127 for c in customer_id):
+                customer_id = raw_value or ""
+                if not 1 <= len(customer_id) <= 64 or not CUSTOMER_ID_PATTERN.fullmatch(customer_id):
                     errors.append(f"row {line_number}: invalid customerID")
                 else:
                     parsed[name] = customer_id
