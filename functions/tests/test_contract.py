@@ -106,3 +106,16 @@ def test_row_cap_is_enforced() -> None:
     small = Settings(max_batch_rows=5)
     with pytest.raises(CsvContractError, match="Too many rows"):
         parse_csv(data.encode(), settings=small)
+
+
+@pytest.mark.parametrize("bad_id", ["7590 VHVEG", "a/b", " lead", "trail ", "é123", "x" * 65])
+def test_invalid_customer_id_rejected_locally_without_echo(bad_id):
+    data = payload().decode().replace("7590-VHVEG", bad_id, 1).encode()
+    with pytest.raises(CsvContractError, match="invalid customerID") as exc:
+        parse_csv(data, settings=SETTINGS)
+    assert bad_id not in str(exc.value)
+
+
+def test_customer_id_ascii_pattern_accepts_dot_underscore_hyphen():
+    data = payload().decode().replace("7590-VHVEG", "id.A_b-1", 1).encode()
+    assert parse_csv(data, settings=SETTINGS)[0]["customerID"] == "id.A_b-1"
