@@ -83,7 +83,7 @@ Current PR #17 reports 13 API pytest cases, including multi-row batch, invalid/e
 
 ## 5. Worker, retries and persistence
 
-- Worker calls the API with an explicit timeout, writes complete result JSON to `output/<blobName>.json`, and stores metadata in Cosmos DB.
+- Worker calls the API with an explicit timeout and stores result JSON and Cosmos metadata. **Updated R2 proposal (#21, pending review):** create-only `output/<blobName>.<idempotencyKey>.json`, one immutable result per input version; this replaces the earlier unversioned path if the team approves it.
 - **Proposed:** `maxDequeueCount = 5`. After failures, the queue-trigger mechanism should route to `inference-requests-poison`; reproduce a failure and keep evidence. Confirm actual Functions queue-trigger configuration in implementation.
 - **Proposed error policy (awaiting R2 approval):** HTTP 422 or permanent schema errors → record rejection reason and do not retry blindly. HTTP 429/500/503 and timeouts → bounded retries (maximum five queue deliveries), then poison message and an incident record. Set and test a concrete HTTP timeout in the worker. Retrying after a successful inference must not duplicate output or Cosmos metadata; use `blobName` + `etag` as the idempotency key.
 - Azure Cosmos DB (preferred if free tier is available): database `pipeline`, container `inferences`, partition key `/fileName`. **Fallback:** Azure Table Storage.
@@ -104,7 +104,7 @@ Example **metadata** from the Excel:
 }
 ```
 
-**Open decision:** ensure the `id` representation safely handles Blob names and ETags and stays stable across retries.
+**Implemented in #21, pending approval:** sanitized filename stem (max 40 chars) + hyphen + first 16 hex SHA-256 characters of UTF-8 `blobName|etag`.
 
 ## 6. Dashboard and monitoring
 
@@ -120,7 +120,7 @@ Proposed shared variable names in the Excel: `MODEL_API_URL`, `COSMOS_ENDPOINT`,
 
 - No passwords, storage keys, credentials or connection strings in the repository.
 - Deploy via GitHub Actions with OIDC and a user-assigned managed identity; restrict Contributor to the project resource group.
-- Azure for Students: one selected integration subscription; budget **USD 25 maximum**, target **under USD 5**; verify region compatibility before provisioning.
+- Azure for Students: Gémima confirms that both she and Aminata have sufficient credit, based on previously shared evidence. Select one integration subscription; budget **USD 25 maximum**, target **under USD 5**; verify region compatibility and quota on that subscription before provisioning.
 - No VM, GPU or AKS. Use local Docker/Azurite/Functions Core Tools before Azure services are available.
 
 ## 8. Integration discrepancies to resolve before approval
@@ -156,7 +156,16 @@ These values reflect the current `feat/event-pipeline` implementation, not a new
 - Worker HTTP connect timeout: **2 s**; read timeout: **10 s** (`API_CONNECT_TIMEOUT_SECONDS`, `API_READ_TIMEOUT_SECONDS`). These are separate limits, not a total wall-clock deadline. Confirm with R2 and test timeout/retry behavior.
 - CSV: UTF-8 (BOM accepted), comma separator, canonical ordered header, no extra columns, blank rows ignored, decimal point, maximum 1 MiB and 10,000 rows. `customerID` required in CSV (1–64 characters); empty `TotalCharges` maps to null. Reject the entire file on any invalid nonblank row; no partial scoring. R2 must ensure permanent CSV errors in the worker are rejected rather than retried, including when content changes after dispatch.
 - Rejection JSON currently implemented: `{"blobName":"batch_01.csv","reason":"validation error","status":"rejected"}`; reason limited to 2,000 characters. Confirm original-file retention and avoid sensitive values in logs.
-- Cosmos ID currently implemented: sanitized filename stem (max 40 characters), hyphen, first 16 hex characters of SHA-256 of UTF-8 `blobName|etag`. Partition key `/fileName`. Verify conditional reads against the event ETag, concurrent duplicate delivery and distinct output versions; the digest alone does not guarantee exactly-once inference.
+- Cosmos ID currently implemented: sanitized filename stem (max 40 characters), hyphen, first 16 hex characters of SHA-256 of UTF-8 `blobName|etag`. Partition key `/fileName`. #21 implements conditional reads and version-specific canonical writes; 61 offline tests passed at 192e4c0. Concurrent duplicate deliveries can call inference twice; only durable output/metadata are deduplicated. Actual Azure adapters remain to be tested.
 - R1: 21 features and threshold 0.5 remain provisional for the academic demo; the two ticket counters have no demonstrated pre-churn availability. Omar's ablation is reported in #18. Do not freeze the schema or claim production validity until the team chooses 21 or 19 features and confirms dataset usage rights. If 19, retrain and update API, worker, ONNX, tests and metrics together.
 - Integration: Omar identified sequential merge conflicts in `README.md` and `model/features.json` between #17/#18. Resolve on a reviewed branch and rerun both test suites and Docker build; Omar proposes merging #17 first, then rebasing #18 and rerunning both suites and Docker build. This order requires explicit team validation; #17 must not freeze an incompatible schema or imply dataset permission. #18 remains gated on dataset rights and the 19/21 decision. Also reconcile README.md between #14/#17 and the union of .gitignore rules between #14/#18 before merging.
 - R4: Omar confirmed `inferred_rows` for KQL; #19 dashboard consumes `{count,limit,results}` from `/api/recent`. Real Azure evidence remains pending.
+
+
+## 11. Integration evidence and infrastructure proposals — 26 November
+
+- #21 (192e4c0): 61 offline tests green, conditional ETag download, superseded event handling, immutable versioned output and Cosmos point reads on /fileName. Queue payload uses Base64 to match default Functions binding. Runtime adapters do not create cloud resources. Confirm these changes in review before freezing the interface.
+- #22 (aea068a): 2 real ONNX offline integration tests green against API #17 and pipeline #21 pinned commits. No Azure service or training dataset download was involved.
+- #23: integrated CI/GHCR/CD prepared with opt-in dataset/publication and deployment gates. #24: Bicep templates for Storage, Cosmos Free Tier (not serverless), Functions Flex, Container Apps, UAMI/RBAC/OIDC, monitoring. No Azure deployment executed. Align R4 resource names in #20 with the selected R3 configuration; no duplicate workspace.
+- #18 remains gated on actual dataset permissions and final 19/21 decision. If the schema changes, rerun #21/#22 and synchronize model schema and artifacts. No claim of production validity.
+- Pending R2 review: versioned output naming, superseded events, queue encoding, rejection overwrite policy, actual SDK/Functions binding behavior and real cloud test. Do not treat successful offline CI as deployment evidence.
