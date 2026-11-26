@@ -26,6 +26,7 @@ jobs:
       CONTAINER_APP: ${{ vars.AZURE_CONTAINER_APP }}
       FUNCTION_APP: ${{ vars.AZURE_FUNCTION_APP }}
       AZURE_SUBSCRIPTION: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      GHCR_REGISTRY_MODE: ${{ vars.GHCR_REGISTRY_MODE }}
     steps:
       - uses: actions/checkout@v4
       - name: Validate configuration and artifact
@@ -54,7 +55,13 @@ jobs:
           test "$(az account show --query id -o tsv)" = "$AZURE_SUBSCRIPTION"
           az containerapp show -g "$AZURE_RG" -n "$CONTAINER_APP" --query name -o tsv
           az functionapp show -g "$AZURE_RG" -n "$FUNCTION_APP" --query name -o tsv
-          az containerapp registry list -g "$AZURE_RG" -n "$CONTAINER_APP" --query '[].server' -o tsv | grep -Fx ghcr.io
+          case "$GHCR_REGISTRY_MODE" in
+            private)
+              az containerapp registry list -g "$AZURE_RG" -n "$CONTAINER_APP" --query '[].server' -o tsv | grep -Fx ghcr.io
+              ;;
+            public) echo "Public image pull approved; no private registry credential required." ;;
+            *) echo "Explicit GHCR_REGISTRY_MODE required (public/private)." >&2; exit 1 ;;
+          esac
       - name: Update existing Container App and verify the release
         run: |
           set -euo pipefail
