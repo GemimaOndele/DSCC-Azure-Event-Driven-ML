@@ -59,3 +59,17 @@ Credit sufficiency for both student subscriptions is confirmed by the coordinato
 | Gémima / release gate | #25 offline gate | All 45 PR pairs and 10 sequential merges clean on synchronized heads; local Docker build <500 MB; pins refreshed for current #14/#25 heads; no publication or deployment |
 
 No remote merge, real Azure resource operation or publication was performed by the coordinator. Remaining dataset/artifact permission, schema decision, human reviews and live cloud validation are explicit release gates.
+
+## 27 November — 19-feature / ONNX 1.1.0 migration
+
+| Scope | Commit and run | Verified result |
+|---|---|---|
+| R1 API | #17 846a697; 45961769605 | 16 pytest, Ruff, Docker green |
+| R1 training | #18 e7d8272; 45961524670 | 4 offline checks, Ruff, 4 dataset-dependent tests deselected; reported 1.1.0 metrics AUC 0.8413 / F1 0.6136 / accuracy 0.7381 |
+| R2 | #21 d4e5138; 45962557654 | 72 pytest + Ruff; retired ticket columns rejected |
+| R4 dashboard | #19 c852877; 45963960460 | 17 Node tests, returned version preserved |
+| R4 monitoring | #20 2b4f599; 45963992469 | Independent mocked CLI/curl guards; old R1 copies removed |
+| QA | #22 8f41a99; 45963915557 | 2 real ONNX + 3 Azurite SDK tests, 19-feature schema and blob verified |
+| R3 | #24 78ac96d; 45962535851 | CI green, Elias APPROVED preflight/docs only; no OIDC execution or deployment |
+
+Prior 1.0.0 runs above are historical. The 1.1.0 full integrated gate and Azure acceptance remain separate checks. No new dataset download, publication or remote merge by the coordinator. Work evidence records initial resource group, budget and OIDC identity configuration; actual deployment, cost and quota evidence pending.
