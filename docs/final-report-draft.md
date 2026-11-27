@@ -136,7 +136,7 @@ The static dashboard targets GET /api/recent, refreshes every 30 seconds, and
 shows file/customer counts, risk, mean probability, latency and model version.
 PR #19 now includes strict payload validation and 17 passing Node tests (45963960460). PR #20 adds OpenTelemetry metrics:
 inferred_rows, inference_latency_ms, inference_requests and inference_errors,
-plus KQL and email alert logic. The earlier R4 CI duplicated R1 tests. On 27 November, #20 2b4f599 removed duplicated API/model/workflow files and passed independent mocked command guards (45963992469); the current telemetry implementation and its tests are owned by #17. Cloud telemetry evidence remains pending. The R4 alert script reuses existing R3 resources and requires explicit owner consent.
+plus KQL and email alert logic. The earlier R4 CI duplicated R1 tests. On 27 November, #20 65ff2d2 was stacked on #17 846a697 without rewriting history. Its nine-file R4 delta is independently verified by CI 45964577085; R1 code and model are inherited byte-for-byte, and R1 owns telemetry implementation/tests. Cloud telemetry evidence remains pending. The R4 alert script reuses existing R3 resources and requires explicit owner consent.
 No customer values should be written to metrics labels or screenshots.
 
 ## 9. Testing and evidence
@@ -150,7 +150,7 @@ No customer values should be written to metrics labels or screenshots.
 | Local Azure SDK integration (Azurite) | 3 tests in 45963915557; Blob/Queue/Table, not Cosmos or Functions host |
 | Git pairwise integration rehearsal | Refreshed 12 pairs: 3 conflicts, 9 clean (45884397543), down from 5 conflicts |
 | Sequential integrated preview | 10 pinned PRs, 103 tests (15 API + 70 pipeline + 2 ONNX + 16 dashboard), Ruff and mocked R4 guards passed (45884397493) |
-| Full offline release gate | Historical 1.0.0: 45 pairwise and 10 sequential merges clean; 1.1.0 gate must be rerun after migration |
+| Full offline release gate | 1.1.0: 45 pairwise and 10 sequential merges clean; 107 integrated tests, Ruff, mocked R4 guards and Docker ~100.6 MB (45964613679 and 45964640260); no remote merge |
 | Azure E2E under 60 s | Not performed |
 | Rejection and poison queue in Azure | Not performed |
 | Dashboard, KQL, fired alert and email | Not performed |
@@ -169,7 +169,8 @@ Work reports a EUR 4 monthly budget with alerts at 20%, 50%, 80%; target under U
 
 | Item | Planned configuration | Estimated cost | Actual cost |
 |---|---|---|---|
-| Storage / transactions | LRS, small CSV and results | USD 0.1466 | Pending |
+| Blob Storage / transactions | LRS, small CSV and results | USD 0.1466 | Pending |
+| Storage Queue | LRS, bounded operations | USD 0.0445 | Pending |
 | Cosmos or Table | Free Tier if eligible / explicit fallback | USD 0 conditional on Free Tier | Pending |
 | Functions | Flex, low demo volume | USD 0.0654 | Pending |
 | Container Apps | Consumption, min 0 max 2 | USD 0.1084 | Pending |
