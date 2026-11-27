@@ -83,3 +83,15 @@ Prior 1.0.0 runs above are historical. The 1.1.0 integrated gate is verified by 
 | Branch inventory | `infra/azure-core` absent after merge | No manual branch deletion performed in Chat. |
 
 All application provisioning, actual quota and Free Tier checks, owner approval of production, dataset/artifact authorization and cloud acceptance remain open. No deployment enabled or Azure charge incurred by this merge.
+
+### Live OIDC recovery — 27 November 2026
+
+| Event | Evidence | Result |
+|---|---|---|
+| First attempt | Run 45966902708 attempt 1 | AADSTS700213, legacy subject mismatch |
+| Corrected existing credential | Work account of 27 Nov | Subject updated in place; no additional identity reported |
+| Actual OIDC verification | [Attempt 2](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/45966902708/attempts/2), job 140414854878 | SUCCESS: Azure login, expected subscription, RG France Central, logout; independently verified in logs |
+| IaC correction | #26 a3f5b233, run 45970191053 | Immutable subject/issuer/audience assertions passed; review and merge pending |
+| Cosmos Free Tier | Work account | Option selectable; no account created, effective Free Tier unverified |
+
+No application resources deployed. The local Work archive and twelve captures are reported saved by Work; their bytes were not independently inspected in Chat. Refresh quota/cost checks and what-if after #26 is integrated.
