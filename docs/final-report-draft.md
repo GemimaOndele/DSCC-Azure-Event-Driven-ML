@@ -64,28 +64,26 @@ Cosmos point reads use /fileName as partition key. A fallback Table Storage path
 requires explicit deployment and performance validation.
 
 Contract pending team approval: versioned output naming, superseded-event handling,
-final feature count, data provenance and publication rights. The planned integration
+the revised 19-feature interface, data provenance and publication rights. The planned integration
 uses shared schema rather than independent inconsistent copies.
 
 ## 4. Data and model
 
 The current model is logistic regression trained with stratified 80/20 split,
 random seed 42, median imputation, scaling and one-hot encoding, exported to ONNX.
-The current schema has 21 predictive variables including two ticket counters.
+The R1/R4 integration target (27 November) is ONNX 1.1.0, with 19 predictive variables: 15 categorical and 4 numeric. The two ticket counters are excluded and rejected as extra inputs.
 customerID identifies an input row; Churn is the target and is excluded from inference.
 
 Reported metrics from PR #18, not independently reproduced for this report:
 
-| Metric | Current 21-feature model | Majority baseline |
-|---|---:|---:|
-| AUC | 0.9273 | 0.5000 |
-| F1 | 0.7328 | 0.0000 |
-| Accuracy | 0.8318 | 0.7346 |
+| Metric | Model 1.1.0 (19 features) | Historical 1.0.0 (21 features) | Majority baseline |
+|---|---:|---:|---:|
+| AUC | 0.8413 | 0.9273 | 0.5000 |
+| F1 | 0.6136 | 0.7328 | 0.0000 |
+| Accuracy | 0.7381 | 0.8318 | 0.7346 |
 
 The availability of ticket counts before the prediction date is not demonstrated.
-An ablation reported by Omar gives AUC 0.8413 and F1 0.6136 for 19 features.
-This is a leakage risk, not proof of leakage. The team must choose the final
-feature set and document the limitation. Third-party dataset use, automated
+R1/R4 selected 19 features because pre-churn availability of the two counters is undocumented; the ablation quantifies the trade-off but does not prove leakage. The held-out 1,409-row confusion matrix for 1.1.0 is [[747, 288], [81, 293]]. The reported maximum ONNX/scikit-learn probability difference is 1.495e-7. The coordinator and independent reviewers still need to confirm the release contract. Third-party dataset use, automated
 download, derivative artifact publication and redistribution permissions are not
 yet positively confirmed. Educational purpose alone does not establish a license.
 Do not present the metrics as production generalization or publish the artifact
@@ -98,7 +96,7 @@ POST /predict/batch, GET /metrics. The batch API consumes {"rows":[...]} and ret
 predictions, summary, model_version and latency_ms. Strict validation rejects invalid
 features and non-finite numeric values. HTTP 422 is a permanent input error;
 transient network/429/5xx failures are retried by the worker.
-Evidence: #17, current head 8672dfd after the shared-file synchronisation commits, run 45885173139: 15 API tests, Ruff, Docker build and the <500 MB image gate. The GHCR workflow on #17 is manual and opt-in, and publishes only `preview-<commit-sha>`; no new publication followed that change. The historical branch publication run 45880950088 (SHA 6fb916d, tags 1.0.0 and sha-6fb916d19230cdd29fccffccdf3722704f1f8b25, digest sha256:7932660bde49aeeaffad67fd58f5609a80ab123b11b632d663a0f88adab3b3f8) remains branch proof only. It establishes neither final integrated release, artifact rights, package visibility nor Azure deployment.
+Evidence: #17, head 846a697, run 45961769605: 16 API tests, Ruff, Docker build and the <500 MB image gate. The GHCR workflow on #17 is manual and opt-in, and publishes only `preview-<commit-sha>`; no new publication followed that change. The historical branch publication run 45880950088 (SHA 6fb916d, tags 1.0.0 and sha-6fb916d19230cdd29fccffccdf3722704f1f8b25, digest sha256:7932660bde49aeeaffad67fd58f5609a80ab123b11b632d663a0f88adab3b3f8) remains branch proof only. It establishes neither final integrated release, artifact rights, package visibility nor Azure deployment.
 
 ## 6. Pipeline and distributed systems
 
@@ -114,7 +112,7 @@ GitHub Actions run 45878414101, job 140111279553, 61 offline tests passed; after
 These tests use in-memory adapters and HTTP mocks; they do not prove real Azure
 SDK behavior or end-to-end cloud operation. Independent integration preview #22,
 run 45878841099, verified 2 tests passed with the real ONNX API and synthetic inputs,
-using pinned API 5388f1c and pipeline 192e4c0 without merging main. The refreshed preview at #22 886ee85 against API 69cf39c and pipeline 503280a again passed both tests (run 45882194925). The latest approved QA preview at #22 65c11e9 pinned API 5886584 and pipeline 503280a and passed 2 real ONNX plus 3 isolated Azurite SDK tests (run 45884397529), still without merging branches or touching Azure.
+using pinned API 5388f1c and pipeline 192e4c0 without merging main. The refreshed preview at #22 886ee85 against API 69cf39c and pipeline 503280a again passed both tests (run 45882194925). The latest approved QA preview at #22 65c11e9 pinned API 5886584 and pipeline 503280a and passed 2 real ONNX plus 3 isolated Azurite SDK tests (run 45884397529), still without merging branches or touching Azure. On 27 November, #21 d4e5138 passed 72 tests and Ruff (45962557654); #22 8f41a99 pinned #17 846a697 and #21 d4e5138, verified the schema and ONNX blob 09ee933f, and passed 2 ONNX and 3 Azurite tests for 1.1.0 (45963915557). The previous preview is historical evidence.
 
 ## 7. Infrastructure, security and CI/CD
 
@@ -126,9 +124,9 @@ access; GitHub Actions uses UAMI federation with restricted RG scope and OIDC.
 No hard-coded secrets. GHCR authentication is separate from ARM OIDC; private
 registry pull permissions must be approved and configured.
 
-The Azure sharing guide #15 is merged. The coordinator confirms that both Gémima and Aminata have sufficient student credits, based on previously shared evidence; no new balance is asserted. The single selected subscription, region, quotas and actual RBAC remain pending. PR #24 now contains base.bicep, apps.bicep and a guarded bootstrap, validated by GitHub Actions run 45880668170 (both templates compiled, shell syntax and refusal without approval tested). No Azure resources were deployed. The proposed CI/CD checks the API,
+The Azure sharing guide #15 is merged. The coordinator confirms that both Gémima and Aminata have sufficient student credits, based on previously shared evidence; no new balance is asserted. Work evidence records the coordinator's selected subscription, France Central, RG rg-projet-g2cc, EUR 4/month budget with 20/50/80% alerts, UAMI, federation and Contributor scoped to the RG. Effective Flex quota, Container Apps CPU capacity, Cosmos Free Tier eligibility, individual team permissions and actual OIDC login remain pending. See #24 evidence addendum. PR #24 now contains base.bicep, apps.bicep and a guarded bootstrap, validated by GitHub Actions run 45880668170 (both templates compiled, shell syntax and refusal without approval tested). No application infrastructure has been provisioned; the initial Azure RG and identity configuration are reported in the Work evidence. #24 78ac96d was approved by Elias for documentation/preflight and CI 45962535851 is green. The proposed CI/CD checks the API,
 pipeline and authorized training; GHCR and Azure deployment are explicitly gated.
-Deployment must be manually approved, pin the commit image digest, validate
+Deployment must be manually approved, pin the commit image digest, validate both API and model versions with
 GET /version, then deploy the existing Flex Functions package. No resources are
 provisioned automatically by this draft.
 
@@ -136,23 +134,23 @@ provisioned automatically by this draft.
 
 The static dashboard targets GET /api/recent, refreshes every 30 seconds, and
 shows file/customer counts, risk, mean probability, latency and model version.
-PR #19 now includes strict payload validation and 16 passing Node tests. PR #20 adds OpenTelemetry metrics:
+PR #19 now includes strict payload validation and 17 passing Node tests (45963960460). PR #20 adds OpenTelemetry metrics:
 inferred_rows, inference_latency_ms, inference_requests and inference_errors,
-plus KQL and email alert logic. Dedicated R4 CI now passes 15 API tests, Ruff, Docker and offline command guards (45884243968); these overlap the R1 tests and are not extra unique tests. Cloud telemetry evidence remains pending. The R4 alert script reuses existing R3 resources and requires explicit owner consent.
+plus KQL and email alert logic. The earlier R4 CI duplicated R1 tests. On 27 November, #20 2b4f599 removed duplicated API/model/workflow files and passed independent mocked command guards (45963992469); the current telemetry implementation and its tests are owned by #17. Cloud telemetry evidence remains pending. The R4 alert script reuses existing R3 resources and requires explicit owner consent.
 No customer values should be written to metrics labels or screenshots.
 
 ## 9. Testing and evidence
 
 | Evidence | Status at draft |
 |---|---|
-| API PR #17 CI | Verified 15 tests, Ruff and Docker build |
-| Training PR #18 CI | Verified 8 tests and Ruff; dataset rights/feature decision outstanding |
-| Pipeline PR #21 CI | Verified 70 offline tests and Ruff passed |
-| Integrated real-ONNX pipeline | Latest approved preview: 2 ONNX + 3 Azurite tests, run 45884397529; pinned API 5886584 and pipeline 503280a; earlier ONNX-only refresh in run 45882194925; no Azure |
-| Local Azure SDK integration (Azurite) | Verified 3 tests, run 45883033290; Blob/Queue/Table, not Cosmos or Functions host |
+| API PR #17 CI | 1.1.0: 16 tests, Ruff and Docker build (45961769605) |
+| Training PR #18 CI | 1.1.0: 4 offline checks and Ruff passed, 4 dataset-dependent tests deselected (45961524670); source/artifact rights outstanding |
+| Pipeline PR #21 CI | 1.1.0: 72 offline tests and Ruff passed (45962557654) |
+| Integrated real-ONNX pipeline | 1.1.0: 2 ONNX + 3 Azurite tests (45963915557); pinned API 846a697 and pipeline d4e5138; no Azure |
+| Local Azure SDK integration (Azurite) | 3 tests in 45963915557; Blob/Queue/Table, not Cosmos or Functions host |
 | Git pairwise integration rehearsal | Refreshed 12 pairs: 3 conflicts, 9 clean (45884397543), down from 5 conflicts |
 | Sequential integrated preview | 10 pinned PRs, 103 tests (15 API + 70 pipeline + 2 ONNX + 16 dashboard), Ruff and mocked R4 guards passed (45884397493) |
-| Full offline release gate | 45 pairwise merges and 10 sequential merges clean on synchronized heads; local Docker build < 500 MB; no remote merge, publication or Azure operation |
+| Full offline release gate | Historical 1.0.0: 45 pairwise and 10 sequential merges clean; 1.1.0 gate must be rerun after migration |
 | Azure E2E under 60 s | Not performed |
 | Rejection and poison queue in Azure | Not performed |
 | Dashboard, KQL, fired alert and email | Not performed |
@@ -167,19 +165,18 @@ The QA branch also verifies the real Azure Storage SDK against isolated Azurite 
 
 ## 10. Cost model and actual costs
 
-Budget ceiling proposed: USD 25; alerts at 20%, 50%, 80%. Budgets are alerts, not
-hard spending caps. Estimate after selecting region, expected number of uploads,
-invocations and log ingestion. Do not invent prices or actual consumption.
+Work reports a EUR 4 monthly budget with alerts at 20%, 50%, 80%; target under USD 5, project ceiling USD 25. Budgets are alerts, not hard spending caps. The France Central retail planning scenario in #24 estimates USD 2.4169 including USD 1 contingency for seven days, or USD 5.7289 if log ingestion reaches the daily cap. Actual spend, effective Free Tier and unlisted meters are not verified. See infra/cost-readiness-2026-11-27.md.
 
 | Item | Planned configuration | Estimated cost | Actual cost |
 |---|---|---|---|
-| Storage / transactions | LRS, small CSV and results | Pending | Pending |
-| Cosmos or Table | Free Tier if eligible / explicit fallback | Pending | Pending |
-| Functions | Flex, low demo volume | Pending | Pending |
-| Container Apps | Consumption, min 0 max 2 | Pending | Pending |
+| Storage / transactions | LRS, small CSV and results | USD 0.1466 | Pending |
+| Cosmos or Table | Free Tier if eligible / explicit fallback | USD 0 conditional on Free Tier | Pending |
+| Functions | Flex, low demo volume | USD 0.0654 | Pending |
+| Container Apps | Consumption, min 0 max 2 | USD 0.1084 | Pending |
 | Event Grid | Low event volume | Pending | Pending |
-| Log Analytics / alerts | 0.2 GB/day cap | Pending | Pending |
-| Total | Target ≤ USD 25 | Pending | Pending |
+| Log Analytics / alerts | 0.2 GB total normal scenario | USD 1.0520 | Pending |
+| Reserve | Event Grid and unlisted meters, not a quoted price | USD 1.0000 | Pending |
+| Total | Target under USD 5; ceiling USD 25 | USD 2.4169 planning estimate | Pending |
 
 Record Cost Analysis timestamp and currency, estimate vs actual, then explain
 variance. No claim of zero spend without subscription evidence.
@@ -195,7 +192,7 @@ domain for Q&A. Main currently contains #15; other technical components remain P
 Priority risk register:
 - dataset rights and temporal feature validity — Elias + team;
 - contract consistency and versioned outputs — Aminata/Elias/Gémima;
-- selected subscription, regional restrictions and quota — Aminata/Gémima (credit sufficiency confirmed by coordinator);
+- regional Flex/CPU quotas, effective Free Tier, OIDC and live cost — Aminata/Gémima (subscription and region selected);
 - cross-branch conflicts and missing integrated CI — Gémima;
 - dashboard validation, monitoring and alert evidence — Omar;
 - limited schedule — all members; avoid deferring integration to defense eve.
