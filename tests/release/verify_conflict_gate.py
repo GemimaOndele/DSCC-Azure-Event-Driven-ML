@@ -15,11 +15,11 @@ HEADS = [
     ("14", "131fd715f67a983169451be9492a9b8d1e2b74f1"),
     ("17", "846a697d70fb388cfb9f983bf3b2c14e0a019c2f"),
     ("18", "e7d827263c9dc305656016568be9f8c99ed8f71a"),
-    ("20", "2b4f5998bb55362ffc457a67b08d2adc30e4c18d"),
+    ("20", "65ff2d2ee0e15c41db43fe715be295abbf005229"),
     ("21", "d4e51388cb6979261867fd728748ad7b0f43dbd6"),
     ("19", "c8528772930cd35e1099c43701672b90bd77a5c1"),
     ("22", "8f41a990bfbc34a390003ae2d6704dd6e9105285"),
-    ("23", "dc0b4ffa0b068ff146ead982e0272580f7eea992"),
+    ("23", "57436cb1f4923d61c7d5a79ad5bd64dd571bfbfd"),
     # The workflow passes the reviewed PR head so this self-referential PR is
     # not validated against a stale pre-commit SHA.
     ("25", os.environ.get("PR25_HEAD") or "7b06dfba01790a7fbf5859d8493bb70a765c28a1"),
