@@ -8,6 +8,40 @@ permissions:
   contents: read
   pull-requests: read
 jobs:
+  infrastructure-first:
+    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.head.ref == 'ci/github-actions' && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify the independent infrastructure change against main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          base="$(gh api "repos/$GH_REPO/git/ref/heads/main" --jq .object.sha)"
+          head="$(gh api "repos/$GH_REPO/pulls/24" --jq .head.sha)"
+          state="$(gh api "repos/$GH_REPO/pulls/24" --jq .state)"
+          merged="$(gh api "repos/$GH_REPO/pulls/24" --jq .merged)"
+          if [[ "$state" != open ]]; then
+            test "$merged" = true
+            git merge-base --is-ancestor "$head" "$base"
+          fi
+          [[ "$base" =~ ^[a-f0-9]{40}$ && "$head" =~ ^[a-f0-9]{40}$ ]]
+          tree="$(git merge-tree --write-tree "$base" "$head")"
+          [[ "$tree" =~ ^[a-f0-9]{40}$ ]]
+          while IFS= read -r path; do
+            case "$path" in
+              infra/*|docs/azure-setup-evidence-2026-11-27.md|.github/workflows/ci-infra.yml|.github/workflows/azure-oidc-readonly.yml) ;;
+              *) echo "Unexpected non-infrastructure change: $path"; exit 1 ;;
+            esac
+          done < <(git diff --name-only "$base" "$tree")
+          printf 'Main: %s\nPR24: %s\nPreview tree: %s\n' "$base" "$head" "$tree"
+          echo 'PR #24 merges cleanly into main, with infrastructure-only changes. No merge or Azure operation performed.' >> "$GITHUB_STEP_SUMMARY"
   integration-gate:
     if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.head.ref == 'ci/github-actions' && github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
