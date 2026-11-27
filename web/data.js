@@ -51,5 +51,6 @@
     const results = items.slice(0, sample.limit);
     return { count: results.length, limit: sample.limit, results };
   }
-  return { normalise, weightedProbability, mockRecent };
+  function modelVersions(items) { return [...new Set(items.map(item => item.modelVersion))]; }
+  return { normalise, weightedProbability, mockRecent, modelVersions };
 });
