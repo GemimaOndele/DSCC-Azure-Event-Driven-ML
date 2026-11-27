@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Azure Functions local settings contain secrets
+local.settings.json
+**/local.settings.json
+.azure/
+.azureml/
+.azurite/
+__blobstorage__/
+__queuestorage__/
+*.log
+
+# Docker / notebooks
+.ipynb_checkpoints/
+*.tmp
+*.bak
+
+# Local data exports (track intentionally approved samples only)
+data/raw/
+data/private/
+outputs/
+temp/
+
+# Training data and generated split (PR #18)
+# The case workbook and all derived data are fetched locally, never committed.
+data/
+model/test_split.csv
+# Python artefacts
