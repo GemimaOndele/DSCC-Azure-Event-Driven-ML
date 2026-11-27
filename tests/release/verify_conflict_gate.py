@@ -11,18 +11,18 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 BASE = "fae1d192aad6a0b9c447fb74bfe33a5bbb82d9d0"
 HEADS = [
-    ("14", "a281fb8293378df22ac6ac87da246a21ea307817"),
-    ("17", "8672dfdae562e1b2ce3344f9d913136f1c7ca651"),
-    ("18", "3b489d114adbc9364a24b232fdc6504ee9eeaa58"),
-    ("20", "e41209f8998c5979ba174fc7a2df9c9e2d0edd34"),
-    ("21", "503280aa3a03ea74bcf33b913c5999de39a8d93f"),
-    ("19", "2f57b6495f5f434a1e26985e7333b9439f0c5048"),
-    ("22", "65c11e9861824cb3f7e24b6e30ece48bf186a158"),
-    ("23", "fdfc4325eb18c9e5bd95d26f25b307f956c9657c"),
-    ("24", "a981b2626deab860139b143a6b4029ce56a7998d"),
+    ("24", "78ac96d138b2e565935e92138ea60d089d27c0ec"),
+    ("14", "131fd715f67a983169451be9492a9b8d1e2b74f1"),
+    ("17", "846a697d70fb388cfb9f983bf3b2c14e0a019c2f"),
+    ("18", "e7d827263c9dc305656016568be9f8c99ed8f71a"),
+    ("20", "2b4f5998bb55362ffc457a67b08d2adc30e4c18d"),
+    ("21", "d4e51388cb6979261867fd728748ad7b0f43dbd6"),
+    ("19", "c8528772930cd35e1099c43701672b90bd77a5c1"),
+    ("22", "8f41a990bfbc34a390003ae2d6704dd6e9105285"),
+    ("23", "dc0b4ffa0b068ff146ead982e0272580f7eea992"),
     # The workflow passes the reviewed PR head so this self-referential PR is
     # not validated against a stale pre-commit SHA.
-    ("25", os.environ.get("PR25_HEAD") or "c2a3ed941031a0134b58c195fc8e2a6273a9cc32"),
+    ("25", os.environ.get("PR25_HEAD") or "7b06dfba01790a7fbf5859d8493bb70a765c28a1"),
 ]
 PINS = dict(HEADS)
 
@@ -67,14 +67,17 @@ def main():
                 print(f"SEQUENCE #{number}: clean; no manual resolution", flush=True)
             model = json.loads((candidate / "model/features.json").read_text())
             worker = json.loads((candidate / "functions/contract/features.json").read_text())
-            assert model["feature_count"] == worker["feature_count"] == 21
+            assert model == worker
+            assert model["feature_count"] == 19 and model["model_version"] == "1.1.0"
+            assert {"numAdminTickets", "numTechTickets"}.isdisjoint(f["name"] for f in model["features"])
             assert model["features"] == worker["features"]
             assert model["identifier"] == worker["identifier"]
             assert (candidate / "api/main.py").read_bytes() == blob(PINS["17"], "api/main.py")
             assert (candidate / ".gitignore").read_bytes() == blob(PINS["14"], ".gitignore")
             for path in ["README.md", "model/features.json", ".github/workflows/ci-ml.yml"]:
                 assert (candidate / path).read_bytes() == blob(PINS["17"], path)
-            assert git(candidate, "hash-object", "model/model-1.0.0.onnx").stdout.strip() == "2fc9e022b7029f293bdc3a471f68a91f4d7e57ec"
+            assert git(candidate, "hash-object", "model/model-1.1.0.onnx").stdout.strip() == "09ee933f16731e7218189d19d7c3ab98162de34e"
+            assert not (candidate / "model/model-1.0.0.onnx").exists()
             assert not git(candidate, "ls-files", "data/*", "Customer_Churn_Dataset.xlsx",
                            "model/test_split.csv").stdout.strip()
             for args in [
@@ -94,13 +97,13 @@ def main():
                 ["docker", "image", "inspect", "dscc-release-preview:local", "--format", "{{.Size}}"],
                 text=True).strip())
             assert size < 500000000, f"Image too large: {size}"
-            print(f"RELEASE CHECK: image size {size} bytes; 45 pairs clean; 10 sequential merges clean", flush=True)
+            print(f"RELEASE CHECK: image size {size} bytes; {len(pairs)} pairs clean; {len(steps)} sequential merges clean", flush=True)
         finally:
             git(ROOT, "worktree", "remove", "--force", str(candidate), check=False)
             shutil.rmtree(candidate.parent, ignore_errors=True)
     finally:
         evidence.write_text(json.dumps({"base": BASE, "heads": HEADS, "pairs": pairs, "sequence": steps,
-                                       "schema": "21-feature preview only"}, indent=2))
+                                       "schema": "19-feature 1.1.0 preview only"}, indent=2))
         assert git(ROOT, "rev-parse", "HEAD").stdout.strip() == old_head
 
 
