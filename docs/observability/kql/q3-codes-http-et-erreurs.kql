@@ -1,0 +1,16 @@
+// Q3a — Répartition des codes HTTP de l'API (24 dernières heures)
+requests
+| where timestamp > ago(24h)
+| summarize appels = count() by name, resultCode
+| order by appels desc
+| render piechart
+
+// Q3b — Erreurs de prédiction par motif (métrique personnalisée inference_errors)
+// reason : validation (422), too_large (413), model_error, model_not_loaded
+customMetrics
+| where timestamp > ago(24h)
+| where name == "inference_errors"
+| extend motif = tostring(customDimensions["reason"]),
+         endpoint = tostring(customDimensions["endpoint"])
+| summarize erreurs = sum(value) by motif, endpoint
+| order by erreurs desc
