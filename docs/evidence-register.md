@@ -68,8 +68,8 @@ No remote merge, real Azure resource operation or publication was performed by t
 | R1 training | #18 e7d8272; 45961524670 | 4 offline checks, Ruff, 4 dataset-dependent tests deselected; reported 1.1.0 metrics AUC 0.8413 / F1 0.6136 / accuracy 0.7381 |
 | R2 | #21 d4e5138; 45962557654 | 72 pytest + Ruff; retired ticket columns rejected |
 | R4 dashboard | #19 c852877; 45963960460 | 17 Node tests, returned version preserved |
-| R4 monitoring | #20 2b4f599; 45963992469 | Independent mocked CLI/curl guards; old R1 copies removed |
+| R4 monitoring | #20 65ff2d2; 45964577085 | Independent mocked CLI/curl guards; R1 dependency exact and nine-file R4 delta |
 | QA | #22 8f41a99; 45963915557 | 2 real ONNX + 3 Azurite SDK tests, 19-feature schema and blob verified |
 | R3 | #24 78ac96d; 45962535851 | CI green, Elias APPROVED preflight/docs only; no OIDC execution or deployment |
 
-Prior 1.0.0 runs above are historical. The 1.1.0 full integrated gate and Azure acceptance remain separate checks. No new dataset download, publication or remote merge by the coordinator. Work evidence records initial resource group, budget and OIDC identity configuration; actual deployment, cost and quota evidence pending.
+Prior 1.0.0 runs above are historical. The 1.1.0 integrated gate is verified by 45964613679 and 45964640260: 45 pairs clean, ten sequential merges clean, 16 API + 72 pipeline + 2 ONNX + 17 Node = 107 tests, Ruff, mocked guards and Docker ~100.6 MB. The tested #25 script was 6a5cabe and the dynamic #23 head was 478bc82; later report-only changes are not covered by the exact earlier snapshots. Azure acceptance remains separate. No new dataset download, publication or remote merge by the coordinator. Work evidence records initial resource group, budget and OIDC identity configuration; actual deployment, cost and quota evidence pending.
