@@ -89,12 +89,12 @@ jobs:
           Path("current-heads.json").write_text(json.dumps({"base":base,"heads":heads,"already_merged":merged}, indent=2))
           print(Path("current-heads.json").read_text())
           PY
-      - name: Run reviewed integration gate against the recorded snapshot
+      - name: Run pinned 1.1.0 integration gate against the recorded snapshot
         run: |
           set -euo pipefail
-          # Reviewed gate implementation from #25, never fetch a moving script.
+          # Candidate 1.1.0 gate from #25, pinned to a specific commit pending independent review.
           mkdir -p tests/release
-          git show c7fb67cafd347583a5bc9f8566cb566a0eb4abba:tests/release/verify_conflict_gate.py > tests/release/verify_conflict_gate.py
+          git show 196b3cb4332b9ee111cf38e99e99539fa6c6ff60:tests/release/verify_conflict_gate.py > tests/release/verify_conflict_gate.py
           python - <<'PY'
           import importlib.util, json, subprocess
           from pathlib import Path
@@ -105,7 +105,7 @@ jobs:
               if number in snapshot["already_merged"]:
                   subprocess.run(["git","merge-base","--is-ancestor",sha,snapshot["base"]],check=True)
                   print(f"PR #{number}: existing merge ancestry verified")
-          spec = importlib.util.spec_from_file_location("reviewed_gate", "tests/release/verify_conflict_gate.py")
+          spec = importlib.util.spec_from_file_location("pinned_gate", "tests/release/verify_conflict_gate.py")
           gate = importlib.util.module_from_spec(spec)
           spec.loader.exec_module(gate)
           gate.BASE = snapshot["base"]
