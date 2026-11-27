@@ -9,7 +9,7 @@ from src.api_client import (
 
 ROWS = [{"customerID": "7590-VHVEG", "gender": "Female"}]
 BATCH_RESPONSE = {
-    "model_version": "1.0.0",
+    "model_version": "1.1.0",
     "latency_ms": 12.3,
     "predictions": [
         {
@@ -25,7 +25,7 @@ BATCH_RESPONSE = {
         "atRisk": 0,
         "avgChurnProbability": 0.12,
         "threshold": 0.5,
-        "model_version": "1.0.0",
+        "model_version": "1.1.0",
     },
 }
 
