@@ -39,6 +39,9 @@ def synthetic_csv(count=3):
 
 
 def test_real_onnx_inference_through_dispatch_worker_recent():
+    contract = load_feature_contract()
+    assert contract["feature_count"] == 19 and contract["model_version"] == "1.1.0"
+    assert {"numAdminTickets", "numTechTickets"}.isdisjoint(required_columns())
     data = synthetic_csv()
     name = "synthetic-batch.csv"
     blobs = InMemoryBlobStore({name: data})
@@ -49,6 +52,7 @@ def test_real_onnx_inference_through_dispatch_worker_recent():
     assert len(queue.messages) == 1
     with TestClient(app) as http:
         assert http.get("/health").status_code == 200
+        assert http.get("/version").json()["model_version"] == "1.1.0"
         api = InferenceClient("http://testserver", client=http)
         outcome = process(queue.messages[0], settings=settings, blobs=blobs, api=api, results=results)
         assert outcome["status"] == "ok" and outcome["rows"] == 3
@@ -59,6 +63,7 @@ def test_real_onnx_inference_through_dispatch_worker_recent():
     assert len(blobs.containers["output"]) == 1
     data, origin = recent(results=results, settings=settings, request_origin="https://dashboard.example")
     assert data["count"] == 1 and data["results"][0]["rows"] == 3
+    assert data["results"][0]["modelVersion"] == "1.1.0"
     assert origin == "https://dashboard.example"
 
 
