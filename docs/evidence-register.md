@@ -109,3 +109,18 @@ No application resources deployed. The local Work archive and twelve captures ar
 | R4 review | Omar, 27 Nov 10:15 UTC | Approved current #14/#17/#18/#21/#23; #18 rights remain unresolved; #22 requires re-review |
 
 Omar reports eight local training tests for 1.1.0; the actual current training CI remains four offline tests passed and four dataset-dependent tests deselected. Do not equate reported local results with a CI download authorization. Azure application infrastructure and E01–E11 remain pending.
+
+### Integration into protected main — 27 November 11:23–11:24 UTC
+
+| Event | Evidence | Result |
+|---|---|---|
+| #14 contract merged | merge 3e298c1, Elias APPROVED after 19-feature corrections, Omar APPROVED | Merged into main; shared schema now 1.1.0 / 19 inputs |
+| #17 API merged | merge 1357387, checks 45961769605 | Merged; 16 API tests, Ruff, Docker and <500 MB gate green |
+| #21 pipeline merged | merge 0f2d4f2, checks 45962557654 | Merged; 72 offline tests and Ruff green |
+| #23 CI/CD merged | merge b519575, checks 45964640245 / 45964640260 | Merged; workflow lint, integration gate and infrastructure-first green |
+| #18 training | head e7d8272, Omar APPROVED; Gémima re-review requested 7217023572 | Not merged until the historical change request is resolved |
+| #20 monitoring | branch pushed to 900c728, R4-only nine-file delta over current main | Re-review pending; cloud alert still unexecuted |
+| #19 dashboard / #22 QA | renewed reviews requested on ccb406c and b5181e1 | No cloud acceptance claimed |
+| #25 report | this update | Draft until rights, captures, costs and cloud evidence are complete |
+
+No GHCR release, deployment flag activation, dataset download, Azure resource creation or cost was incurred by these merges.

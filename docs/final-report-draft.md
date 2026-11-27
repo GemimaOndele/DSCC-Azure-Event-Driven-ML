@@ -16,8 +16,11 @@ handling of duplicated events, controlled infrastructure costs and traceable del
 
 The reference implementation includes an ONNX classification model served by FastAPI,
 a Python Azure Functions dispatcher and worker, a recent-results endpoint, and an
-observability/dashboard layer. As of this draft, development is conducted on separate
-reviewed branches. Cloud deployment and final acceptance remain to be demonstrated.
+observability/dashboard layer. On 27 November at 11:23–11:24 UTC the reviewed contract
+(#14), API (#17), event pipeline (#21) and integrated CI/CD (#23) were merged into
+protected main. Training provenance (#18), monitoring (#20), dashboard (#19), QA
+(#22) and this report (#25) remain in review. No Azure application resources have
+been provisioned and cloud acceptance is not demonstrated.
 
 ## 2. Scope and requirements
 
@@ -63,9 +66,10 @@ call inference more than once; only durable output and metadata are idempotent.
 Cosmos point reads use /fileName as partition key. A fallback Table Storage path
 requires explicit deployment and performance validation.
 
-Contract pending team approval: versioned output naming, superseded-event handling,
-the revised 19-feature interface, data provenance and publication rights. The planned integration
-uses shared schema rather than independent inconsistent copies.
+Contract #14 is merged with the 19-feature interface; versioned output naming,
+superseded-event handling and the shared schema are integrated with the API and
+pipeline. Data provenance and derivative-artifact publication rights remain
+unresolved and are explicit release gates.
 
 ## 4. Data and model
 

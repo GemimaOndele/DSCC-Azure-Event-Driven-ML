@@ -15,7 +15,7 @@ are not all proven Git conflicts. Historical blob SHA prefixes:
 | .gitignore | 7d0b789 | — | 8b5df60 | — |
 | .github/workflows/ci-ml.yml | — | dde6dc3 | 3c5c41a | dde6dc3 |
 | model/features.json | — | bf12ccd | b8b4eaa | bf12ccd |
-| model/model-1.0.0.onnx | — | shared artifact per #17/#18 | shared | inherited #17 |
+| model/model-1.1.0.onnx (current; 1.0.0 was the historical blob in this 26 Nov audit) | — | shared artifact per #17/#18 | shared | inherited #17 |
 
 #20 includes inherited #17 files (API, Dockerfile, requirements, tests, model).
 Its own observability changes should be reviewed against the final API after
@@ -93,7 +93,7 @@ The #25 release gate later checked all C(10,2) = 45 pairs and the same ten-step 
 
 #24 at 78ac96d was independently approved for preflight/documentation by Elias; CI 45962535851 passed. The owner authorized its normal merge into protected main, completed at e56f77c. The infrastructure branch was absent after merge. READ-DSCC on main succeeded after correcting the existing federation and obtaining personal production approval (run 45966902708 attempt 2). #26 was independently approved by Omar and merged at c67bafc after CI 45970191053 passed, preserving the corrected subject in IaC. Next: refresh quota, costs and what-if. No model or dataset was needed for the read-only OIDC test. Refresh actual quota, Free Tier, RBAC and what-if before any provision. Do not conflate preflight with permission to deploy.
 
-R1/R4 selected ONNX 1.1.0 / 19 features (blob 09ee933f); #17 and #18 synchronized their artifacts and schema. #20 65ff2d2 is stacked on #17 846a697, preserving R1 byte-for-byte; the delta is nine observability files (45964577085); #21 aligned its schema and 72 tests, #19 updated sample version with 17 tests, #22 passed 2 ONNX + 3 Azurite tests with 1.1.0. The new 1.1.0 release gate succeeded: 45 pairs and ten sequential merges, 107 tests, Ruff, mocked guards and Docker under 500 MB (45964613679, 45964640260); no remote merge. The dynamic run records exact heads, and subsequent documentation-only changes are separate. Remaining proposed order after #24 and #26: #14 → #17 → #18 → #20 → #21 → #19 → #22 → #23 → #25, subject to team review, rights clearance and current CI. Do not use the historical 21-feature reports as proof of the new release. No automatic merge.
+R1/R4 selected ONNX 1.1.0 / 19 features (blob 09ee933f); #17 and #18 synchronized their artifacts and schema. #20 65ff2d2 is stacked on #17 846a697, preserving R1 byte-for-byte; the delta is nine observability files (45964577085); #21 aligned its schema and 72 tests, #19 updated sample version with 17 tests, #22 passed 2 ONNX + 3 Azurite tests with 1.1.0. The new 1.1.0 release gate succeeded: 45 pairs and ten sequential merges, 107 tests, Ruff, mocked guards and Docker under 500 MB (45964613679, 45964640260); no remote merge. The dynamic run records exact heads, and subsequent documentation-only changes are separate. Executed on 27 November at 11:23–11:24 UTC: #14 → #17 → #21 → #23 were merged into protected main after independent approval and green checks. #18 awaits Gémima's renewed review; #20 was updated to a nine-file R4 delta on 900c728; #19 and #22 have renewed review requests; #25 is being finalised. Rights clearance still gates artifact publication. Do not use the historical 21-feature reports as proof of the new release.
 
 ### QA revalidation after the OIDC fix
 

@@ -33,17 +33,17 @@ flowchart LR
 
 | Domain | Source | Current review |
 |---|---|---|
-| Project organization | docs/project-overview.md; docs/technical-contract.md | #14 |
+| Project organization | docs/project-overview.md; docs/technical-contract.md | #14 merged (3e298c1) |
 | Azure access | docs/azure-access-guide.md | #15 merged |
-| ML API | api/; model/features.json | #17 |
-| Training and provenance | model/DATASET.md; model/FEATURE_RISK_ANALYSIS.md; model/TRAINING_EVIDENCE.md | #18 |
-| Event pipeline | functions/README.md; functions/src/ | #21 |
-| Dashboard | web/README.md | #19 |
-| Monitoring | docs/observability/README.md | #20 |
-| QA | tests/e2e/README.md | #22 |
-| CI/CD | .github/workflows/ci.yml; deploy.yml | #23 |
-| Azure IaC | infra/DEPLOYMENT.md | #24 merged (e56f77c) |
-| Report and release evidence | docs/final-report-draft.md; docs/integration-plan.md; docs/evidence-register.md | #25 |
+| ML API | api/; model/features.json | #17 merged (1357387) |
+| Training and provenance | model/DATASET.md; model/FEATURE_RISK_ANALYSIS.md; model/TRAINING_EVIDENCE.md | #18 review renewed with Gémima |
+| Event pipeline | functions/README.md; functions/src/ | #21 merged (0f2d4f2) |
+| Dashboard | web/README.md | #19 re-review requested |
+| Monitoring | docs/observability/README.md | #20 R4-only delta 900c728 |
+| QA | tests/e2e/README.md | #22 re-review requested |
+| CI/CD | .github/workflows/ci.yml; deploy.yml | #23 merged (b519575) |
+| Azure IaC | infra/DEPLOYMENT.md | #24 merged (e56f77c), #26 merged (c67bafc) |
+| Report and release evidence | docs/final-report-draft.md; docs/integration-plan.md; docs/evidence-register.md | #25 finalisation in progress |
 
 ## Model and API
 
@@ -52,7 +52,7 @@ The existing model is logistic regression exported to ONNX (1.1.0), stratified
 The current integration target uses 19 predictive inputs (15 categorical, 4 numeric), excluding customerID and Churn. The two ticket counts are rejected as extra inputs.
 The two ticket counters have no demonstrated pre-churn availability. Reported
 ablation: 21 features AUC 0.9273/F1 0.7328; 19 features AUC 0.8413/F1 0.6136.
-R1/R4 selected 19 variables on 27 November; the independent integration review, case workbook and derivative publication rights remain pending. Do not fetch the workbook or publish an
+R1/R4 selected 19 variables on 27 November; core integration on main is complete, while case-workbook authorization and derivative publication rights remain pending. Do not fetch the workbook or publish an
 artifact without appropriate permission. The case workbook is not the raw IBM
 dataset. See model/DATASET.md and model/FEATURE_RISK_ANALYSIS.md.
 
