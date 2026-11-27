@@ -59,3 +59,12 @@ unset DSCC_TEST_INVALID_STATUS
 bash infra/trigger-alert.sh
 test "$(grep -c 'curl ' "$DSCC_TEST_LOG")" = 36
 echo 'Observability guard and status checks passed (mocked commands only).'
+
+# Verify synthetic alert request matches the current R1 contract (19 features).
+python3 - <<'PY'
+import json, pathlib, re
+text = pathlib.Path("infra/trigger-alert.sh").read_text()
+row = json.loads(re.search(r"^VALID_ROW='(.*)'$", text, re.M).group(1))
+assert len(row) == 20 and "customerID" in row
+assert not {"numAdminTickets", "numTechTickets"} & row.keys()
+PY
