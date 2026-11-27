@@ -16,10 +16,5 @@ jobs:
       - uses: actions/checkout@v4
       - run: bash -n infra/observability.sh && bash -n infra/trigger-alert.sh
       - run: bash tests/observability/test_guards.sh
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - run: python -m pip install -r api/requirements-dev.txt ruff==0.9.10
-      - run: python -m ruff check api
-      - run: python -m pytest api/tests -q
-      - run: docker build -f api/Dockerfile -t dscc-observability:ci .
+      - name: Confirm R4 contains no duplicate model or API
+        run: test ! -d api && test ! -d model && test ! -f .github/workflows/ci-ml.yml
