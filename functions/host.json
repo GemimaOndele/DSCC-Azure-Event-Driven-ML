@@ -1,0 +1,24 @@
+{
+  "version": "2.0",
+  "functionTimeout": "00:05:00",
+  "logging": {
+    "applicationInsights": {
+      "samplingSettings": {
+        "isEnabled": true,
+        "excludedTypes": "Request",
+        "maxTelemetryItemsPerSecond": 20
+      }
+    }
+  },
+  "extensions": {
+    "queues": {
+      "maxDequeueCount": 5,
+      "batchSize": 1,
+      "visibilityTimeout": "00:00:30",
+      "maxPollingInterval": "00:00:10"
+    },
+    "eventGrid": {
+      "maxDegreeOfParallelism": 1
+    }
+  }
+}

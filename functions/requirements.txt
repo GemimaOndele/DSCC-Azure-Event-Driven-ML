@@ -1,0 +1,7 @@
+azure-functions>=1.20,<2
+azure-identity>=1.17,<2
+azure-storage-blob>=12.20,<13
+azure-storage-queue>=12.10,<13
+azure-cosmos>=4.7,<5
+azure-data-tables>=12.5,<13
+httpx>=0.27,<1
