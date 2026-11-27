@@ -42,7 +42,7 @@ flowchart LR
 | Monitoring | docs/observability/README.md | #20 |
 | QA | tests/e2e/README.md | #22 |
 | CI/CD | .github/workflows/ci.yml; deploy.yml | #23 |
-| Azure IaC | infra/DEPLOYMENT.md | #24 |
+| Azure IaC | infra/DEPLOYMENT.md | #24 merged (e56f77c) |
 | Report and release evidence | docs/final-report-draft.md; docs/integration-plan.md; docs/evidence-register.md | #25 |
 
 ## Model and API
@@ -99,7 +99,7 @@ tests may fetch the case data; do not run them without authorization.
 One selected Azure for Students subscription, maximum budget USD 25 (internal
 target under USD 5), approved region/quotas, one project RG, budget alerts at
 20/50/80%. Credits are sufficient on both student subscriptions per coordinator;
-the coordinator's subscription and France Central are recorded as selected; actual deployment still requires owner validation. See the #24 setup evidence and cost-readiness note.
+the coordinator's subscription and France Central are recorded as selected; actual deployment still requires owner validation. See the merged #24 setup evidence and cost-readiness note. Read-only OIDC is available on main, with actual execution and application infrastructure still pending.
 Use infra/DEPLOYMENT.md, Bicep what-if then explicitly approved provisioning.
 GHCR branch publication is not a final release. Main publication and Azure
 deployment require artifact approval and explicit gates. Record real deployment,

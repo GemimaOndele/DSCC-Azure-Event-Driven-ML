@@ -124,7 +124,7 @@ access; GitHub Actions uses UAMI federation with restricted RG scope and OIDC.
 No hard-coded secrets. GHCR authentication is separate from ARM OIDC; private
 registry pull permissions must be approved and configured.
 
-The Azure sharing guide #15 is merged. The coordinator confirms that both Gémima and Aminata have sufficient student credits, based on previously shared evidence; no new balance is asserted. Work evidence records the coordinator's selected subscription, France Central, RG rg-projet-g2cc, EUR 4/month budget with 20/50/80% alerts, UAMI, federation and Contributor scoped to the RG. Effective Flex quota, Container Apps CPU capacity, Cosmos Free Tier eligibility, individual team permissions and actual OIDC login remain pending. See #24 evidence addendum. PR #24 now contains base.bicep, apps.bicep and a guarded bootstrap, validated by GitHub Actions run 45880668170 (both templates compiled, shell syntax and refusal without approval tested). No application infrastructure has been provisioned; the initial Azure RG and identity configuration are reported in the Work evidence. #24 78ac96d was approved by Elias for documentation/preflight and CI 45962535851 is green. The proposed CI/CD checks the API,
+The Azure sharing guide #15 is merged. The coordinator confirms that both Gémima and Aminata have sufficient student credits, based on previously shared evidence; no new balance is asserted. Work evidence records the coordinator's selected subscription, France Central, RG rg-projet-g2cc, EUR 4/month budget with 20/50/80% alerts, UAMI, federation and Contributor scoped to the RG. Effective Flex quota, Container Apps CPU capacity, Cosmos Free Tier eligibility, individual team permissions and actual OIDC login remain pending. See #24 evidence addendum. The merged infrastructure PR #24 contains base.bicep, apps.bicep and a guarded bootstrap, validated by GitHub Actions run 45880668170 (both templates compiled, shell syntax and refusal without approval tested). No application infrastructure has been provisioned; the initial Azure RG and identity configuration are reported in the Work evidence. #24 78ac96d was approved by Elias for documentation/preflight, CI 45962535851 passed, and the PR was merged into protected main at e56f77c. The read-only OIDC workflow is now present on main, but its actual execution is not yet evidenced. The proposed CI/CD checks the API,
 pipeline and authorized training; GHCR and Azure deployment are explicitly gated.
 Deployment must be manually approved, pin the commit image digest, validate both API and model versions with
 GET /version, then deploy the existing Flex Functions package. No resources are
@@ -161,7 +161,7 @@ No customer values should be written to metrics labels or screenshots.
 Evidence files should include UTC date, exact commit, environment, test ID,
 expected/observed result and owner, with secrets/personal data redacted.
 
-The QA branch also verifies the real Azure Storage SDK against isolated Azurite (Blob, Queue and Table): ETag conditional reads, Base64 queue payload, immutable concurrent writes, metadata recovery and sanitized rejection. Three tests passed in run 45883033290 after correcting the test fixture credential type. No actual Azure authentication, Cosmos DB, Event Grid or Functions host was exercised. The emulator uses a pinned image and a deliberately synthetic local key. A pairwise Git merge-tree rehearsal confirmed five conflicting pairs and seven clean pairs; see docs/integration-plan.md. No remote merge was performed.
+The QA branch also verifies the real Azure Storage SDK against isolated Azurite (Blob, Queue and Table): ETag conditional reads, Base64 queue payload, immutable concurrent writes, metadata recovery and sanitized rejection. Three tests passed in run 45883033290 after correcting the test fixture credential type. No actual Azure authentication, Cosmos DB, Event Grid or Functions host was exercised. The emulator uses a pinned image and a deliberately synthetic local key. The initial Git merge-tree rehearsal found five conflicting pairs; the later 1.1.0 gate resolved them, as recorded above. The rehearsals did not merge remote branches; the separate, approved #24 merge is recorded in section 7.
 
 ## 10. Cost model and actual costs
 
@@ -188,7 +188,7 @@ R1 Elias: ML/model API; R2 Aminata and Gémima: event pipeline; R3 Aminata and
 Gémima: Azure/CI-CD; R4 Omar: dashboard, observability and costs. Gémima coordinates
 integration and delivery. GitHub protected main, independent PR review, evidence-based
 issue closure. Do not approve own PR. All team members should understand a second
-domain for Q&A. Main currently contains #15; other technical components remain PRs. #21 and #22 are ready for independent review, with CI evidence; #23 CI/CD and #24 compiled infrastructure templates are prepared for review. #25 is this working report.
+domain for Q&A. Main contains #15 (access guide) and #24 (infrastructure and read-only OIDC workflow). The remaining nine PRs are open; #21 and #22 await current-head independent review, and #23 CI/CD remains under review. #25 is this working report.
 
 Priority risk register:
 - dataset rights and temporal feature validity — Elias + team;

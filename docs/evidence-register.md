@@ -73,3 +73,13 @@ No remote merge, real Azure resource operation or publication was performed by t
 | R3 | #24 78ac96d; 45962535851 | CI green, Elias APPROVED preflight/docs only; no OIDC execution or deployment |
 
 Prior 1.0.0 runs above are historical. The 1.1.0 integrated gate is verified by 45964613679 and 45964640260: 45 pairs clean, ten sequential merges clean, 16 API + 72 pipeline + 2 ONNX + 17 Node = 107 tests, Ruff, mocked guards and Docker ~100.6 MB. The tested #25 script was 6a5cabe and the dynamic #23 head was 478bc82; later report-only changes are not covered by the exact earlier snapshots. Azure acceptance remains separate. No new dataset download, publication or remote merge by the coordinator. Work evidence records initial resource group, budget and OIDC identity configuration; actual deployment, cost and quota evidence pending.
+
+### Infrastructure integration milestone — 27 November
+
+| Event | Evidence | Status |
+|---|---|---|
+| #24 independent review and merge | Elias APPROVED 78ac96d; CI 45962535851; merge e56f77c | Merged into protected main (one independent approval required; no bypass). |
+| Read-only workflow | `.github/workflows/azure-oidc-readonly.yml` on main, blob 54c9a2ad | Present; no real OIDC execution observed at verification. |
+| Branch inventory | `infra/azure-core` absent after merge | No manual branch deletion performed in Chat. |
+
+All application provisioning, actual quota and Free Tier checks, owner approval of production, dataset/artifact authorization and cloud acceptance remain open. No deployment enabled or Azure charge incurred by this merge.
