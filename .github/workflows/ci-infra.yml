@@ -1,0 +1,52 @@
+name: DSCC infrastructure validation (no Azure login)
+on:
+  pull_request:
+    paths:
+      - 'infra/**'
+      - '.github/workflows/ci-infra.yml'
+      - '.github/workflows/azure-oidc-readonly.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - name: Validate read-only OIDC workflow
+        run: |
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
+          "$(go env GOPATH)/bin/actionlint" .github/workflows/ci-infra.yml .github/workflows/azure-oidc-readonly.yml
+      - name: Verify identical workflow and clean integration with pinned CI PR
+        run: |
+          set -euo pipefail
+          # Refresh this pin when PR #23 (ci/github-actions) moves; the OIDC
+          # workflow blob must stay byte-identical on both branches.
+          CI_HEAD=cecd412cf704081c70a34590b3e2455b76e953f5
+          test "$(git hash-object .github/workflows/azure-oidc-readonly.yml)" = "$(git rev-parse "$CI_HEAD:.github/workflows/azure-oidc-readonly.yml")"
+          git merge-tree --write-tree --name-only --no-messages HEAD "$CI_HEAD"
+      - name: Compile Bicep templates without Azure credentials
+        run: |
+          set -euo pipefail
+          az bicep install
+          az bicep build --file infra/base.bicep --outfile "$RUNNER_TEMP/base.json"
+          az bicep build --file infra/apps.bicep --outfile "$RUNNER_TEMP/apps.json"
+      - name: Check shell syntax
+        run: |
+          set -euo pipefail
+          bash -n infra/preflight-readonly.sh
+          bash -n infra/bootstrap.sh
+      - name: Check guarded default
+        run: |
+          bash infra/bootstrap.sh --help
+          if bash infra/bootstrap.sh apply-base; then
+            echo "Unsafe: missing approval allowed deployment" >&2
+            exit 1
+          fi

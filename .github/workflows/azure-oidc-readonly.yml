@@ -1,0 +1,51 @@
+name: DSCC Azure OIDC read-only verification
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Type READ-DSCC for read-only Azure verification'
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: dscc-production-preflight
+  cancel-in-progress: false
+jobs:
+  verify:
+    if: github.ref == 'refs/heads/main' && inputs.confirmation == 'READ-DSCC'
+    environment: production
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AZURE_RG: ${{ vars.AZURE_RESOURCE_GROUP }}
+      EXPECTED_SUBSCRIPTION: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      EXPECTED_TENANT: ${{ vars.AZURE_TENANT_ID }}
+    steps:
+      - name: Check non-secret configuration
+        env:
+          CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$AZURE_RG" && test -n "$EXPECTED_SUBSCRIPTION"
+          test -n "$EXPECTED_TENANT" && test -n "$CLIENT_ID"
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Verify subscription and project group without publishing identifiers
+        run: |
+          set -euo pipefail
+          test "$(az account show --query id -o tsv)" = "$EXPECTED_SUBSCRIPTION"
+          test "$(az account show --query tenantId -o tsv)" = "$EXPECTED_TENANT"
+          test "$(az group show -n "$AZURE_RG" --query name -o tsv)" = "$AZURE_RG"
+          test "$(az group show -n "$AZURE_RG" --query location -o tsv)" = francecentral
+          az resource list -g "$AZURE_RG" --query '[].{name:name,type:type,location:location}' -o table
+          echo 'OIDC login and RG read succeeded. No resources created or updated.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Log out
+        if: always()
+        run: az logout
