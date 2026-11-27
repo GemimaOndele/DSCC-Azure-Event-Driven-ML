@@ -5,8 +5,8 @@ This estimate uses the Microsoft public USD retail-price snapshot dated
 Workload assumptions below are planning assumptions, not measured usage.
 The project owner has selected Azure for Students in France Central. The RG,
 EUR 4/month budget with 20/50/80% alerts, GitHub UAMI, federation and RG-scoped
-Contributor are reported created in the Work evidence addendum. No base/apply
-or actual end-to-end OIDC login has been evidenced.
+Contributor are reported created in the Work evidence addendum. No base
+deployment or actual end-to-end OIDC login has been evidenced.
 
 ## Seven-day bounded demonstration (27 Nov–3 Dec, then separately approved cleanup)
 

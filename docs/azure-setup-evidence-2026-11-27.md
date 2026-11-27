@@ -35,7 +35,7 @@ az functionapp list-flexconsumption-locations --query "[?name=='francecentral']"
 az storage account check-name --name dsccg2cc20261126 -o json
 az cosmosdb check-name-exists --name dscc-g2cc-20261126 -o json
 az deployment group what-if --resource-group rg-projet-g2cc --name dscc-base \
-  --template-file dscc-plan/base.bicep \
+  --template-file infra/base.bicep \
   --parameters location=francecentral storageName=dsccg2cc20261126 \
   cosmosName=dscc-g2cc-20261126 resultBackend=cosmosFreeTier prefix=dscc \
   --result-format ResourceIdOnly --no-pretty-print
@@ -63,7 +63,7 @@ Some early screenshots have a narrow crop. Use the observed text and correspondi
 - No Function App, Container App, Event Grid subscription, dashboard or model was deployed.
 - Cosmos Free Tier eligibility still needs explicit validation at creation; absence of accounts and a successful what-if are insufficient guarantees.
 - Flex regional memory quota is unverified: the tested usages API returned MethodNotAllowed/51009.
-- No priced workload estimate or total-cost acceptance was completed.
+- A preliminary retail-based estimate is recorded in `infra/cost-readiness-2026-11-27.md` (USD 2.4169 planning total), but no invoice, measured spend or total-cost acceptance has been completed.
 - Individual team Azure roles are not configured; exact accounts and scopes remain to be verified.
 - OIDC configuration is in place but a GitHub-issued token has not yet been tested end-to-end.
 - PR #23 now contains a read-only OIDC verification workflow, guarded to main and production approval. It must be reviewed/integrated by humans before manual execution. The agent did not merge or approve any PR or deployment.

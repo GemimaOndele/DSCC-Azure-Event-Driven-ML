@@ -1,6 +1,6 @@
 # Azure preflight and approval checklist — #3 / #7 / #8
 
-Prepared 26 November 2026. The project coordinator confirms that both Gémima and Aminata have sufficient Azure for Students credits, based on previously shared evidence. Treat credit sufficiency as a team-confirmed input; do not request the same screenshots again. **No live balance, quota, selected subscription or region has been independently inspected in this intervention. No Azure resource created.** Run the read-only preflight in the selected owner's authenticated Cloud Shell.
+Prepared 26 November 2026. The project coordinator confirms that both Gémima and Aminata have sufficient Azure for Students credits, based on previously shared evidence. Treat credit sufficiency as a team-confirmed input; do not request the same screenshots again. **No live balance, quota, selected subscription or region was independently inspected when this checklist was first written. No Azure resource was created by this PR.** The 27 November owner session subsequently verified the subscription, permitted region, budget, providers, UAMI/federation and RG-scoped Contributor in `docs/azure-setup-evidence-2026-11-27.md`. Flex memory quota, Cosmos Free Tier eligibility and end-to-end OIDC still require verification. Run the read-only preflight in the selected owner's authenticated Cloud Shell.
 
 ```bash
 bash infra/preflight-readonly.sh

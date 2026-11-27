@@ -88,9 +88,12 @@ reviewers if supported, environment production restricted to protected main.
 Keep AZURE_DEPLOY_ENABLED=false until the release is approved.
 
 ## Stage 2 — application infrastructure (after approved model/image)
-After #14/#18 decisions, approved integration and successful CI on main,
+The delivered R1 model is `1.1.0` with 19 inputs: `numAdminTickets` and
+`numTechTickets` were removed because their availability before `Churn` is not
+documented. Confirm the approved image reports `model_version=1.1.0` at `/version`
+and that its ONNX blob matches the one shared by #17/#18. After approved integration and successful CI on main,
 set MODEL_ARTIFACT_PUBLISH_APPROVED and ENABLE_GHCR only with documented rights to publish
-the artifact. DATASET_USE_APPROVED independently gates training/download. The R1 branch image published on 26 November (run 45880950088, SHA 6fb916d) is evidence of branch publication, not final release or permission; do not deploy it without approval. Publish immutable SHA-tagged image, record digest. Private GHCR
+the artifact. DATASET_USE_APPROVED independently gates training/download. The R1 branch image published on 26 November (run 45880950088, SHA 6fb916d) was built with the retired 21-feature `1.0.0` model: it is evidence of branch publication only, not final release or permission; do not deploy it. Publish immutable SHA-tagged image, record digest. Private GHCR
 requires a separately authorized scoped read token stored as an Azure secret.
 The bootstrap prompts for this only in the owner's terminal, never via chat.
 Public registry option requires explicit package visibility approval.

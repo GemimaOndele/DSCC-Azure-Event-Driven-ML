@@ -27,7 +27,9 @@ jobs:
       - name: Verify identical workflow and clean integration with pinned CI PR
         run: |
           set -euo pipefail
-          CI_HEAD=a15804423ee46f7ee680ebfe9e0b0c60638a933c
+          # Refresh this pin when PR #23 (ci/github-actions) moves; the OIDC
+          # workflow blob must stay byte-identical on both branches.
+          CI_HEAD=cecd412cf704081c70a34590b3e2455b76e953f5
           test "$(git hash-object .github/workflows/azure-oidc-readonly.yml)" = "$(git rev-parse "$CI_HEAD:.github/workflows/azure-oidc-readonly.yml")"
           git merge-tree --write-tree --name-only --no-messages HEAD "$CI_HEAD"
       - name: Compile Bicep templates without Azure credentials
