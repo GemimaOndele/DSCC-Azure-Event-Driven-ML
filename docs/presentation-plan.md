@@ -28,7 +28,7 @@ and reproducibility, with explicit validation and traceable CI evidence.
 - Show a pre-recorded invalid CSV rejection, bounded retry/poison result, KQL and
   alert evidence rather than consuming presentation time on asynchronous waits.
 - Show CI run, image digest, actual Cost Analysis and limits; redact identifiers.
-- If Azure unavailable: demonstrate offline real-ONNX pipeline (latest verified 1.1.0 preview run 45963915557:
+- If Azure unavailable: demonstrate offline real-ONNX pipeline (latest verified 1.1.0 preview run 45981804373:
   2 ONNX + 3 isolated Azurite tests) and clearly label cloud acceptance incomplete.
   Never use mock results or a branch-only GHCR publication as Azure proof.
 - Final slide: confirmed vs pending, limitations, cleanup after separate approval.
@@ -55,4 +55,4 @@ Run a timed 10-minute rehearsal; record actual evidence links and unresolved iss
 
 Historical 1.0.0 evidence for rehearsal: 103 tests passed on assembled disposable integration preview (run 45884397493), plus three Azurite SDK tests separately. Three conflicting files were resolved temporarily, not on remote branches. Dashboard 16 tests and R4 mocked command guards are included in the preview; Azure alert and real deployment remain pending.
 
-Current 1.1.0 component evidence (27 Nov): 16 API tests, 72 pipeline tests, 17 dashboard tests, 2 real ONNX + 3 Azurite tests and mocked R4 guards; the new integrated gate and live Azure acceptance must be verified separately. #24 preflight approved by Elias and merged into main at e56f77c; initial Azure setup and indicative USD 2.42 cost documented, but OIDC execution, quotas and resource provisioning not evidenced.
+Current 1.1.0 component evidence (27 Nov): 16 API tests, 72 pipeline tests, 17 dashboard tests, 2 real ONNX + 3 Azurite tests and mocked R4 guards; QA b5181e1 passed 55 pairwise comparisons and nine temporary integrations, with 107 tests (45981804434, 45981804366). #24 and #26 merged (main c67bafc); real read-only OIDC succeeded (45966902708 attempt 2). Indicative USD 2.42 cost documented, but actual quota, provisioning, costs and Azure acceptance remain unverified.

@@ -91,7 +91,21 @@ All application provisioning, actual quota and Free Tier checks, owner approval 
 | First attempt | Run 45966902708 attempt 1 | AADSTS700213, legacy subject mismatch |
 | Corrected existing credential | Work account of 27 Nov | Subject updated in place; no additional identity reported |
 | Actual OIDC verification | [Attempt 2](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/45966902708/attempts/2), job 140414854878 | SUCCESS: Azure login, expected subscription, RG France Central, logout; independently verified in logs |
-| IaC correction | #26 a3f5b233, run 45970191053 | Immutable subject/issuer/audience assertions passed; review and merge pending |
+| IaC correction | #26 a3f5b233, run 45970191053 | Immutable subject/issuer/audience assertions passed; Omar approved a3f5b233 and #26 merged at c67bafc |
 | Cosmos Free Tier | Work account | Option selectable; no account created, effective Free Tier unverified |
 
-No application resources deployed. The local Work archive and twelve captures are reported saved by Work; their bytes were not independently inspected in Chat. Refresh quota/cost checks and what-if after #26 is integrated.
+No application resources deployed. The local Work archive and twelve captures are reported saved by Work; their bytes were not independently inspected in Chat. Refresh quota/cost checks and what-if now that #26 is integrated.
+
+### Post-fix QA and review checkpoint — 27 November
+
+| Scope | Evidence | Result |
+|---|---|---|
+| #26 | a3f5b233, 45970191053, merge c67bafc | Omar APPROVED; IaC subject matches working federation |
+| #22 | b5181e1, 45981804434 | 55/55 pairs clean on explicit snapshot |
+| #22 | b5181e1, 45981804366 | Nine pending PR integrations clean; 107 tests, Ruff and mocked guards |
+| #22 | b5181e1, 45981804373 | 2 real ONNX + 3 Azurite tests |
+| #23 | 45964640260 attempt 3 | Dynamic gate passed, 107 tests, image 100599122 bytes; original PR set excludes #26 |
+| #19 | ccb406c, 45981945036 | README-only correction, dashboard CI passed |
+| R4 review | Omar, 27 Nov 10:15 UTC | Approved current #14/#17/#18/#21/#23; #18 rights remain unresolved; #22 requires re-review |
+
+Omar reports eight local training tests for 1.1.0; the actual current training CI remains four offline tests passed and four dataset-dependent tests deselected. Do not equate reported local results with a CI download authorization. Azure application infrastructure and E01–E11 remain pending.

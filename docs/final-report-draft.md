@@ -4,7 +4,7 @@
 
 **Team:** Gémima ONDELE POUROU, Yaye Aminata DIAGNE, Elias CREMNITER, Omar KRARTI  
 **Defense:** 2 December 2026  
-**Document status:** working report, 26 November 2026. Evidence still being collected. Not the final PDF.
+**Document status:** working report, 27 November 2026. Evidence still being collected. Not the final PDF.
 
 ## 1. Executive summary
 
@@ -124,7 +124,7 @@ access; GitHub Actions uses UAMI federation with restricted RG scope and OIDC.
 No hard-coded secrets. GHCR authentication is separate from ARM OIDC; private
 registry pull permissions must be approved and configured.
 
-The Azure sharing guide #15 is merged. The coordinator confirms that both Gémima and Aminata have sufficient student credits, based on previously shared evidence; no new balance is asserted. Work evidence records the coordinator's selected subscription, France Central, RG rg-projet-g2cc, EUR 4/month budget with 20/50/80% alerts, UAMI, federation and Contributor scoped to the RG. Effective Flex quota, Container Apps CPU capacity, actual Cosmos Free Tier application and individual team permissions remain pending. Work reports the Free Tier option selectable, without creating an account. See #24 evidence addendum. The merged infrastructure PR #24 contains base.bicep, apps.bicep and a guarded bootstrap, validated by GitHub Actions run 45880668170 (both templates compiled, shell syntax and refusal without approval tested). No application infrastructure has been provisioned; the initial Azure RG and identity configuration are reported in the Work evidence. #24 78ac96d was approved by Elias for documentation/preflight, CI 45962535851 passed, and the PR was merged into protected main at e56f77c. The read-only OIDC workflow on main initially failed with AADSTS700213 because the GitHub immutable subject did not match the Azure federation. Work corrected the existing credential; the owner approved the retry. Attempt 2 of run 45966902708 succeeded on 27 November at 10:17 CET (Azure login, expected subscription, France Central RG verification and logout), independently verified in GitHub job logs. Evidence: https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/45966902708/attempts/2. PR #26 corrects the Bicep template to preserve the same subject; its offline CI passed but independent review and merge remain pending. No application deployment occurred. The proposed CI/CD checks the API,
+The Azure sharing guide #15 is merged. The coordinator confirms that both Gémima and Aminata have sufficient student credits, based on previously shared evidence; no new balance is asserted. Work evidence records the coordinator's selected subscription, France Central, RG rg-projet-g2cc, EUR 4/month budget with 20/50/80% alerts, UAMI, federation and Contributor scoped to the RG. Effective Flex quota, Container Apps CPU capacity, actual Cosmos Free Tier application and individual team permissions remain pending. Work reports the Free Tier option selectable, without creating an account. See #24 evidence addendum. The merged infrastructure PR #24 contains base.bicep, apps.bicep and a guarded bootstrap, validated by GitHub Actions run 45880668170 (both templates compiled, shell syntax and refusal without approval tested). No application infrastructure has been provisioned; the initial Azure RG and identity configuration are reported in the Work evidence. #24 78ac96d was approved by Elias for documentation/preflight, CI 45962535851 passed, and the PR was merged into protected main at e56f77c. The read-only OIDC workflow on main initially failed with AADSTS700213 because the GitHub immutable subject did not match the Azure federation. Work corrected the existing credential; the owner approved the retry. Attempt 2 of run 45966902708 succeeded on 27 November at 10:17 CET (Azure login, expected subscription, France Central RG verification and logout), independently verified in GitHub job logs. Evidence: https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/45966902708/attempts/2. PR #26 corrects the Bicep template to preserve the same subject; its offline CI passed (45970191053), Omar independently approved a3f5b233, and it was merged into main at c67bafc. No application deployment occurred. The proposed CI/CD checks the API,
 pipeline and authorized training; GHCR and Azure deployment are explicitly gated.
 Deployment must be manually approved, pin the commit image digest, validate both API and model versions with
 GET /version, then deploy the existing Flex Functions package. No resources are
@@ -147,10 +147,10 @@ No customer values should be written to metrics labels or screenshots.
 | Training PR #18 CI | 1.1.0: 4 offline checks and Ruff passed, 4 dataset-dependent tests deselected (45961524670); source/artifact rights outstanding |
 | Pipeline PR #21 CI | 1.1.0: 72 offline tests and Ruff passed (45962557654) |
 | Integrated real-ONNX pipeline | 1.1.0: 2 ONNX + 3 Azurite tests (45963915557); pinned API 846a697 and pipeline d4e5138; no Azure |
-| Local Azure SDK integration (Azurite) | 3 tests in 45963915557; Blob/Queue/Table, not Cosmos or Functions host |
+| Local Azure SDK integration (Azurite) | 3 tests in 45981804373; Blob/Queue/Table, not Cosmos or Functions host |
 | Git pairwise integration rehearsal | Refreshed 12 pairs: 3 conflicts, 9 clean (45884397543), down from 5 conflicts |
 | Sequential integrated preview | 10 pinned PRs, 103 tests (15 API + 70 pipeline + 2 ONNX + 16 dashboard), Ruff and mocked R4 guards passed (45884397493) |
-| Full offline release gate | 1.1.0: 45 pairwise and 10 sequential merges clean; 107 integrated tests, Ruff, mocked R4 guards and Docker ~100.6 MB (45964613679 and 45964640260); no remote merge |
+| Full offline release gate | QA b5181e1 on main c67bafc: 55/55 pairs clean (45981804434), nine remaining PRs integrated temporarily and 107 tests passed (45981804366). Docker 100,599,122 bytes in separate dynamic gate 45964640260, attempt 3. No remote merge by the tests. |
 | Azure E2E under 60 s | Not performed |
 | Rejection and poison queue in Azure | Not performed |
 | Dashboard, KQL, fired alert and email | Not performed |
@@ -188,7 +188,7 @@ R1 Elias: ML/model API; R2 Aminata and Gémima: event pipeline; R3 Aminata and
 Gémima: Azure/CI-CD; R4 Omar: dashboard, observability and costs. Gémima coordinates
 integration and delivery. GitHub protected main, independent PR review, evidence-based
 issue closure. Do not approve own PR. All team members should understand a second
-domain for Q&A. Main contains #15 (access guide) and #24 (infrastructure and read-only OIDC workflow). Ten PRs remain open, including the OIDC template fix #26; #21 and #22 await current-head independent review, and #23 CI/CD remains under review. #25 is this working report.
+domain for Q&A. Main contains #15 (access guide), #24 (infrastructure and read-only OIDC workflow), and #26 (OIDC subject correction). Nine PRs remain open. Omar approved the current #14, #17, #18, #21 and #23 heads; earlier requested changes, final rights and integration acceptance are not thereby waived. #22 was corrected after Omar's review and awaits re-review. #25 is this working report.
 
 Priority risk register:
 - dataset rights and temporal feature validity — Elias + team;

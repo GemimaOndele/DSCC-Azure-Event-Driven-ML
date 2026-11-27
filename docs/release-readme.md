@@ -99,7 +99,7 @@ tests may fetch the case data; do not run them without authorization.
 One selected Azure for Students subscription, maximum budget USD 25 (internal
 target under USD 5), approved region/quotas, one project RG, budget alerts at
 20/50/80%. Credits are sufficient on both student subscriptions per coordinator;
-the coordinator's subscription and France Central are recorded as selected; actual deployment still requires owner validation. See the merged #24 setup evidence and cost-readiness note. Read-only OIDC is available on main, with actual execution and application infrastructure still pending.
+the coordinator's subscription and France Central are recorded as selected; actual deployment still requires owner validation. See the merged #24 setup evidence and cost-readiness note. Read-only OIDC succeeded on main (45966902708 attempt 2); the matching IaC fix #26 was merged at c67bafc. Application infrastructure, actual quota and effective Free Tier remain pending.
 Use infra/DEPLOYMENT.md, Bicep what-if then explicitly approved provisioning.
 GHCR branch publication is not a final release. Main publication and Azure
 deployment require artifact approval and explicit gates. Record real deployment,
