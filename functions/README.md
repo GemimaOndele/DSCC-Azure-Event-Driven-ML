@@ -23,7 +23,7 @@ sans retry. Erreurs transitoires (429/5xx/timeout) : 5 livraisons max
 ## Contrats appliqués
 
 - `contract/features.json` : copie du fichier partagé livré dans #17/#18 (`customerID` +
-  **21 features**, `Churn` jamais envoyé, seuil 0,5). Le validateur échoue si le CSV
+  **19 features**, `Churn` jamais envoyé, seuil 0,5). Le validateur échoue si le CSV
   comporte une colonne manquante ou supplémentaire, car l'API utilise `extra="forbid"`.
 - Lignes entièrement vides ignorées ; `TotalCharges` vide → `null` (imputation médiane
   côté API). Les autres champs obligatoires ne peuvent pas être vides.
@@ -60,7 +60,7 @@ mémoire de `tests/fakes.py` et `httpx.MockTransport`.
 
 ## Tests couverts
 
-Cas : contrat CSV (21 features, colonnes, types, bornes, `TotalCharges`, lignes vides,
+Cas : contrat CSV (19 features, colonnes, types, bornes, `TotalCharges`, lignes vides,
 limite de lignes), message de file et clé d'idempotence, classification HTTP permanent
 vs transitoire (dont timeout), dispatcher (acceptation/rejet), worker (succès, erreur
 permanente, erreur transitoire, doublon), et `/api/recent` (limite 20 + CORS).
@@ -104,3 +104,5 @@ Cette branche est une proposition de code en PR ; elle n'est ni approuvée ni d�
   dot, underscore or hyphen; invalid identifiers are rejected before enqueue,
   with no raw identifier echoed. The current regex mirrors the API; move to a
   shared schema field only with R1 agreement.
+
+Migration R1/R2 27 November: the copied schema is model 1.1.0 (19 predictive inputs + customerID); retired ticket counters are rejected as unexpected CSV columns. The schema choice is implemented for integration, not proof of data/artifact permission or live deployment.
