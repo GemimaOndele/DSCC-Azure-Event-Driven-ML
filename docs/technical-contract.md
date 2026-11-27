@@ -1,6 +1,6 @@
 # DSCC — Technical Contract (DRAFT)
 
-> **Status: PROPOSED — Omar approved R4 on a20b1ba; Elias validated the working R1 model/API interface on 26 Nov. The final 19/21 choice, dataset usage rights and remaining R2/R4 acceptance evidence are still pending.**
+> **Status: PROPOSED — 27 Nov: R1/R4 selected 19 inputs and model 1.1.0; this is the current integration target, not a fully approved contract. Dataset/artifact rights, independent re-review and cloud acceptance remain pending.**
 > This document consolidates the **Contrat** worksheet of `suivi_projet_groupe2.xlsx` and the mandatory interfaces in `PROJET_FR.pdf` (§4). It is *not* evidence of deployed services or finished code.
 > Changes to this contract must be communicated to the team and submitted via pull request.
 
@@ -15,15 +15,15 @@ Telecom Customer Churn: upload a small CSV of clients into Azure Blob Storage (`
 - **Container:** `input/`
 - **File type:** `.csv`
 - **Proposed maximum file size:** `1 MiB` (team choice, not an imposed threshold from the instructor). The API currently caps JSON requests at 8 MiB and batches at 10,000 rows; the dispatcher should enforce the **stricter CSV file limit** independently.
-- **Implemented schema as of 24 Nov (PRs #17/#18):** `customerID` as an identifier **plus 21 model inputs**. The current API Pydantic model accepts the following 21 names; this list is **not yet an approved integration contract**:
+- **Integration target as of 27 Nov (PRs #17/#18):** `customerID` as an identifier **plus 19 model inputs** (15 categorical, 4 numeric); independent contract review remains required:
   - **Categorical (15):** `gender`, `Partner`, `Dependents`, `PhoneService`, `MultipleLines`, `InternetService`, `OnlineSecurity`, `OnlineBackup`, `DeviceProtection`, `TechSupport`, `StreamingTV`, `StreamingMovies`, `Contract`, `PaperlessBilling`, `PaymentMethod`.
-  - **Numeric (6):** `SeniorCitizen`, `tenure`, `MonthlyCharges`, `TotalCharges`, `numAdminTickets`, `numTechTickets`.
-- The earlier proposal of **19** inputs refers to a different schema and is **not compatible** with the current 21-input ONNX model. Elias and Aminata must approve the final list, validation and feature types. Both #17 and #18 contain compatible 21-input schemas, but their `source_dataset` metadata now differs; reconcile before integration, and their automated tests check it. Approval by the team is still required.
+  - **Numeric (4):** `SeniorCitizen`, `tenure`, `MonthlyCharges`, `TotalCharges`.
+- R1/R4 removed `numAdminTickets` and `numTechTickets` because their availability before churn is undocumented. Both the API and CSV parser must reject them as extra columns. This reduces temporal leakage risk, without proving past leakage. The historical 21-feature artifact is 1.0.0; the new target is 1.1.0.
 - The target variable `Churn` must **not** be required by the inference API.
 - `TotalCharges` preprocessing must match training.
 - Invalid extension, excessive size, or missing mandatory columns → copy to `rejected/` and write `<blobName>.reason.json` with a human-readable rejection reason.
 
-**Open decisions:** final features, per-column types, strict vs tolerant extra columns, invalid-row behavior, blank-line policy, decimal encoding and whether batch size is capped separately.
+**Current R2 conventions:** exact ordered header, UTF-8/BOM, decimal point, reject extra columns and the entire invalid file, ignore blank lines, 1 MiB and 10,000 rows. Aminata confirmed these technically on 27 Nov; formal approval and cloud binding tests remain open.
 
 ## 3. Queue message
 
@@ -44,7 +44,7 @@ Storage queue: `inference-requests`. Its poison queue is `inference-requests-poi
 
 - `GET /health`: readiness and model load time.
 - `GET /version`: API version and semantic model version.
-- `POST /predict`: **implemented by PR #17**, single-customer inference with the 21 model inputs and optional `customerID`, returning one prediction.
+- `POST /predict`: **implemented by PR #17**, single-customer inference with the 19 model inputs and optional `customerID`, returning one prediction.
 - `POST /predict/batch`: **implemented by PR #17** with `{"rows":[...]}` (one row per client); returns `predictions` per client and a global `summary`. This is the **proposed canonical worker route** (option A from Elias, supported in Aminata's review), pending team sign-off and merge.
 - `GET /metrics`: HTTP request count `inference_calls`, count of predicted client rows `inferred_rows` and `average_latency_ms`. Omar (R4) confirmed `inferred_rows` for KQL/alerts in his #17 review; this endpoint is currently submitted in PR #17.
 
@@ -62,7 +62,7 @@ Storage queue: `inference-requests`. Its poison queue is `inference-requests-poi
 
 ```json
 {
-  "model_version": "1.0.0",
+  "model_version": "1.1.0",
   "latency_ms": 12.3,
   "predictions": [
     {"customerID": "7590-VHVEG", "prediction": "Yes", "label": 1, "churn_probability": 0.73, "confidence": 0.73}
@@ -72,14 +72,14 @@ Storage queue: `inference-requests`. Its poison queue is `inference-requests-poi
     "atRisk": 1,
     "avgChurnProbability": 0.73,
     "threshold": 0.5,
-    "model_version": "1.0.0"
+    "model_version": "1.1.0"
   }
 }
 ```
 
-**Current implementation (PR #17, not merged):** `POST /predict` accepts one customer and returns `{ "prediction": "Yes|No", "churn_probability": 0.73, "confidence": 0.73, "model_version": "1.0.0" }`. **Batch** is now implemented at the separate `/predict/batch` route, with 15 API tests (including telemetry) and a green `api-tests` job. The threshold is `0.5` in the current 21-feature model; reviewers should validate it and its held-out evidence before declaring a frozen interface.
+**Current implementation (PR #17, not merged):** `POST /predict` accepts one customer and returns `{ "prediction": "Yes|No", "churn_probability": 0.73, "confidence": 0.73, "model_version": "1.1.0" }`. **Batch** is now implemented at the separate `/predict/batch` route, with telemetry and regression tests; confirm the latest 1.1.0 CI before release. The threshold is `0.5` in the current 19-feature model; reviewers should validate it and its held-out evidence before declaring a frozen interface.
 
-Current PR #17 reports 15 API pytest cases, including multi-row batch, invalid/empty fields, numeric overflow (`1e999` → 422), metrics accumulation and an in-memory OTel export test, with a green GitHub Actions `api-tests` job including Docker build and the <500 MB image gate. This is a reviewable code contribution, **not yet merged or deployed**.
+PR #17 implemented the batch, numeric overflow, metrics accumulation and OTel tests on the previous model. Reverify them against 1.1.0; this is not yet a deployed release.
 
 ## 5. Worker, retries and persistence
 
@@ -98,7 +98,7 @@ Example **metadata** from the Excel:
   "rows": 50,
   "atRisk": 12,
   "avgChurnProbability": 0.31,
-  "modelVersion": "1.0.0",
+  "modelVersion": "1.1.0",
   "durationMs": 480,
   "status": "ok"
 }
@@ -120,20 +120,20 @@ Proposed shared variable names in the Excel: `MODEL_API_URL`, `COSMOS_ENDPOINT`,
 
 - No passwords, storage keys, credentials or connection strings in the repository.
 - Deploy via GitHub Actions with OIDC and a user-assigned managed identity; restrict Contributor to the project resource group.
-- Azure for Students: Gémima confirms that both she and Aminata have sufficient credit, based on previously shared evidence. Select one integration subscription; budget **USD 25 maximum**, target **under USD 5**; verify region compatibility and quota on that subscription before provisioning.
+- Azure for Students: Gémima confirms that both she and Aminata have sufficient credit, based on previously shared evidence. The owner subscription and France Central were selected in the Work setup evidence on #24; Aminata's account is fallback. Budget EUR 4/month with 20/50/80% alerts, total project ceiling **USD 25**, target **under USD 5**. Actual quotas and Free Tier eligibility still require verification.
 - No VM, GPU or AKS. Use local Docker/Azurite/Functions Core Tools before Azure services are available.
 
 ## 8. Integration discrepancies to resolve before approval
 
-| Subject | Current implementation / observation (24 Nov 2026) | Decision required |
+| Subject | Current implementation / observation (27 Nov 2026) | Decision required |
 |---|---|---|
-| Feature count | PRs #17 and #18 use **21** inputs and share `model/features.json`; `customerID` is an identifier, not a feature | Confirm as an explicit team integration decision, including the provenance of `numAdminTickets`/`numTechTickets` |
-| Model identity | `model/model-1.0.0.onnx` exists in both #17 and #18 with **identical Git blob SHA** (`2fc9e022b7029f293bdc3a471f68a91f4d7e57ec`) | Select the model-training lot as the long-term source of the ONNX artifact; verify compatibility after sequential merges |
+| Feature count | PRs #17/#18 target **19** inputs, 15 categorical and 4 numeric; `customerID` is not a feature | R1/R4 selection recorded; coordinator and independent reviewer confirmation still required |
+| Model identity | `model/model-1.1.0.onnx`, reported shared blob `09ee933f16731e7218189d19d7c3ab98162de34e` | Verify exact Git blob identity and integrated tests |
 | API interface | PR #17 now implements `/predict` **unitaire** and `/predict/batch` accepting `rows` with `predictions` + `summary` | **Confirm this separate batch URL** with R2 and enforce it in the worker; retain the unit endpoint for local use |
 | Cloud shape | One Function App / 3 Functions proposed, Python 3.12 | Confirm Flex Consumption **512 MiB**, region/quotas before Azure deployment |
 | Queue errors | Five retries and poison queue proposed | Agree on HTTP permanent/transient classification, timeout and idempotent writes |
 | CSV and persistence | 1 MiB cap and Blob ETag dedupe proposed | Confirm row-level failure policy, output JSON, Cosmos metadata, safe stable ID |
-| Documentation and source data | PR #18 at `5c7eb97` removes the workbook and test split from the current tree and retrieves the source with SHA-256 verification; permission for automated educational use and historical copies remain to be checked | Confirm source permission and team decision on temporal leakage before merging #18 |
+| Documentation and source data | PR #18 at `5c7eb97` removes the workbook and test split from the current tree and retrieves the source with SHA-256 verification; permission for automated educational use and historical copies remain to be checked | Confirm source and artifact permission before merging/releasing #18 |
 
 **Implementation status:** The model and API are in open PRs, **not yet merged to `main`**. The final decision belongs to the team; this document records observed differences without silently approving an incompatible change.
 
@@ -141,8 +141,8 @@ Proposed shared variable names in the Excel: `MODEL_API_URL`, `COSMOS_ENDPOINT`,
 
 - [ ] Omar revalidates R4 after these changes (previous approval on `a20b1ba`).
 - [ ] Gémima verifies file/queue/DB naming, object schema and status conventions.
-- [x] Elias confirms the **working 21-input interface** (`model/features.json`), its types, optional `TotalCharges`, the shared ONNX artifact and the exact `/predict` / `/predict/batch` responses. The final 19 vs 21 choice and dataset usage rights remain a team decision (R1 review, 26 Nov).
-- [ ] Aminata confirms the worker's use of `POST /predict/batch`, retry/error policy, rejection, timeout and idempotency.
+- [ ] Elias re-reviews the 19-input contract after requested changes (27 Nov); previous approval covered 21 inputs only.
+- [x] Aminata confirms the worker's use of `POST /predict/batch`, retry/error policy, rejection, timeout and idempotency (technical COMMENT review, 27 Nov on the previous schema; not formal PR approval).
 - [ ] The three reviewers agree on `POST /predict/batch` and the response `predictions`/`summary`, probability threshold, error semantics, queue poison strategy and exceptions.
 - [ ] Update this document through a reviewed Pull Request before implementing incompatible changes.
 
@@ -157,8 +157,8 @@ These values reflect the current `feat/event-pipeline` implementation, not a new
 - CSV: UTF-8 (BOM accepted), comma separator, canonical ordered header, no extra columns, blank rows ignored, decimal point, maximum 1 MiB and 10,000 rows. `customerID` required in CSV (1–64 ASCII characters matching `^[A-Za-z0-9._-]+$`, no surrounding whitespace); empty `TotalCharges` maps to null. Reject the entire file on any invalid nonblank row; no partial scoring. R2 must ensure permanent CSV errors in the worker are rejected rather than retried, including when content changes after dispatch.
 - Rejection JSON currently implemented: `{"blobName":"batch_01.csv","reason":"validation error","status":"rejected"}`; reason limited to 2,000 characters. Confirm original-file retention and avoid sensitive values in logs.
 - Cosmos ID currently implemented: sanitized filename stem (max 40 characters), hyphen, first 16 hex characters of SHA-256 of UTF-8 `blobName|etag`. Partition key `/fileName`. #21 implements conditional reads and version-specific canonical writes; 61 offline tests passed at 192e4c0. Concurrent duplicate deliveries can call inference twice; only durable output/metadata are deduplicated. Actual Azure adapters remain to be tested.
-- R1: 21 features and threshold 0.5 remain provisional for the academic demo; the two ticket counters have no demonstrated pre-churn availability. Omar's ablation is reported in #18. Do not freeze the schema or claim production validity until the team chooses 21 or 19 features and confirms dataset usage rights. If 19, retrain and update API, worker, ONNX, tests and metrics together.
-- Integration: Omar identified sequential merge conflicts in `README.md` and `model/features.json` between #17/#18. Resolve on a reviewed branch and rerun both test suites and Docker build; Omar proposes merging #17 first, then rebasing #18 and rerunning both suites and Docker build. This order requires explicit team validation; #17 must not freeze an incompatible schema or imply dataset permission. #18 remains gated on dataset rights and the 19/21 decision. Also reconcile README.md between #14/#17 and the union of .gitignore rules between #14/#18 before merging.
+- R1/R4 selected the 19-feature model 1.1.0 with threshold 0.5. Recorded held-out AUC 0.8413 / F1 0.6136 / accuracy 0.7381, compared with historical 21-feature AUC 0.9273 / F1 0.7328. Keep dataset/artifact authorization explicit and re-run all affected tests.
+- Integration: align the R4 branch with the current R1 API/ONNX/schema before sequential merging. Re-run the current-head integration gate. The infrastructure-only #24 can be reviewed and merged independently.
 - R4: Omar confirmed `inferred_rows` for KQL; #19 dashboard consumes `{count,limit,results}` from `/api/recent`. Real Azure evidence remains pending.
 
 
@@ -167,8 +167,30 @@ These values reflect the current `feat/event-pipeline` implementation, not a new
 - #21 (192e4c0): 61 offline tests green, conditional ETag download, superseded event handling, immutable versioned output and Cosmos point reads on /fileName. Queue payload uses Base64 to match default Functions binding. Runtime adapters do not create cloud resources. Confirm these changes in review before freezing the interface.
 - #22 (aea068a): 2 real ONNX offline integration tests green against API #17 and pipeline #21 pinned commits. No Azure service or training dataset download was involved.
 - #23: integrated CI/GHCR/CD prepared with opt-in dataset/publication and deployment gates. #24: Bicep templates for Storage, Cosmos Free Tier (not serverless), Functions Flex, Container Apps, UAMI/RBAC/OIDC, monitoring. No Azure deployment executed. Align R4 resource names in #20 with the selected R3 configuration; no duplicate workspace.
-- #18 remains gated on actual dataset permissions and final 19/21 decision. If the schema changes, rerun #21/#22 and synchronize model schema and artifacts. No claim of production validity.
+- #18 remains gated on actual dataset/artifact permissions; revalidate #21/#22 with 1.1.0 before release. No claim of production validity.
 - Pending R2 review: versioned output naming, superseded events, queue encoding, rejection overwrite policy, actual SDK/Functions binding behavior and real cloud test. Do not treat successful offline CI as deployment evidence.
 
-### Review R1 follow-up — 26 November
+### Historical review R1 follow-up — 26 November (1.0.0; superseded by 27 Nov migration)
 Elias confirmed the working 21-feature interface, without freezing the 19/21 decision or approving the data rights. R2 aligned `customerID` validation on the API regex in #21 (503280a): 70 pytest cases and Ruff passed in run 45882123936. R1 API at 5886584: 15 tests, Ruff, Docker build and the <500 MB gate passed in run 45883545674; `publish-api.yml` is now manual, opt-in and limited to `preview-<commit-sha>`, with no new publication. R1 training at 3cb9ffe: 8 tests and Ruff passed in run 45881717150, with reproducible ablation. R1 telemetry implementation from #20 is now present on #17; #20 still needs review/rebase and remaining R4 configuration. QA approved the offline #22 preview at 65c11e9 (2 real ONNX + 3 isolated Azurite tests, run 45884397529); Azure scenarios E01–E11 remain unexecuted. The historical GHCR branch publication run 45880950088 succeeded for SHA 6fb916d, not the current integrated release, and is not an authorisation to distribute or deploy. Publication permission and final schema remain explicit decisions; no Azure deployment.
+
+## 12. Naming and status conventions — coordination review 27 November
+
+The following inventory matches the #24 Bicep defaults and the observed Work evidence; it is a proposal for the coordinator's explicit confirmation, not approval of deployment or a claim that the listed planned services exist.
+
+| Item | Name / convention |
+|---|---|
+| Project group (reported created) | `rg-projet-g2cc` |
+| Region | `francecentral` |
+| GitHub identity / federation (reported created) | `dscc-github-mi` / `github-production` |
+| Planned runtime identity | `dscc-runtime-mi` |
+| Planned Storage / Cosmos accounts (availability previously checked) | `dsccg2cc20261126` / `dscc-g2cc-20261126` |
+| Blob containers | `input`, `output`, `rejected`, `models`, `deployment`; static site `$web` after configuration |
+| Queues | `inference-requests`, `inference-requests-poison` |
+| Cosmos database / container / partition | `pipeline` / `inferences` / `/fileName` |
+| Planned Container Apps environment / API | `dscc-env` / `dscc-api` |
+| Planned Flex plan | `dscc-flex`; globally unique Function App name still to confirm |
+| Monitoring | `dscc-logs`, `dscc-insights` |
+| Output / rejection | `output/<blobName>.<idempotencyKey>.json`, `rejected/<blobName>.reason.json` |
+| Status | `queued`, `ok`, `duplicate`, `rejected`, `superseded` as applicable to processing; retryable errors escape the worker |
+
+No new resource is provisioned by this contract. The 19-feature integration target is based on the R1/R4 decision; the coordinator's acceptance, the full release gate, data rights and cloud evidence are distinct.
