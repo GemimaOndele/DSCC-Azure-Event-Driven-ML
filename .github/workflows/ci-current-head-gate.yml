@@ -94,7 +94,7 @@ jobs:
           set -euo pipefail
           # Candidate 1.1.0 gate from #25, pinned to a specific commit pending independent review.
           mkdir -p tests/release
-          git show 196b3cb4332b9ee111cf38e99e99539fa6c6ff60:tests/release/verify_conflict_gate.py > tests/release/verify_conflict_gate.py
+          git show 6a5cabe40258e72c054b6fd7d449368bde285ce9:tests/release/verify_conflict_gate.py > tests/release/verify_conflict_gate.py
           python - <<'PY'
           import importlib.util, json, subprocess
           from pathlib import Path
