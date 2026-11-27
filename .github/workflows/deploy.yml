@@ -1,0 +1,91 @@
+name: DSCC Azure deployment (manual)
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Type DEPLOY-DSCC after team budget and infrastructure approval'
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: dscc-production-deploy
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main' && inputs.confirmation == 'DEPLOY-DSCC' && vars.AZURE_DEPLOY_ENABLED == 'true' && vars.MODEL_ARTIFACT_PUBLISH_APPROVED == 'true' && vars.ENABLE_GHCR == 'true'
+    environment: production
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    env:
+      AZURE_RG: ${{ vars.AZURE_RESOURCE_GROUP }}
+      CONTAINER_APP: ${{ vars.AZURE_CONTAINER_APP }}
+      FUNCTION_APP: ${{ vars.AZURE_FUNCTION_APP }}
+      AZURE_SUBSCRIPTION: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      GHCR_REGISTRY_MODE: ${{ vars.GHCR_REGISTRY_MODE }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate configuration and artifact
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "$AZURE_RG" && test -n "$CONTAINER_APP" && test -n "$FUNCTION_APP" && test -n "$AZURE_SUBSCRIPTION"
+          test -f functions/host.json && test -f functions/requirements.txt && test -f model/features.json
+          IMAGE="ghcr.io/$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')/churn-api:sha-$GITHUB_SHA"
+          echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker pull "$IMAGE"
+          DIGEST="$(docker inspect --format='{{index .RepoDigests 0}}' "$IMAGE")"
+          echo "IMAGE_DIGEST=$DIGEST" >> "$GITHUB_ENV"
+          VERSION="$(python -c 'import json; print(json.load(open("model/features.json"))["model_version"])')"
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          test -f "model/model-$VERSION.onnx"
+          cmp model/features.json functions/contract/features.json
+          echo "EXPECTED_MODEL_VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "RELEASE_VERSION=$VERSION+${GITHUB_SHA:0:12}" >> "$GITHUB_ENV"
+          (cd functions && zip -qr "$RUNNER_TEMP/functions.zip" . -x 'tests/*' 'fixtures/*' '*__pycache__*' 'local.settings.json*' '.gitignore')
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Verify existing resources and configured registry
+        run: |
+          set -euo pipefail
+          test "$(az account show --query id -o tsv)" = "$AZURE_SUBSCRIPTION"
+          az containerapp show -g "$AZURE_RG" -n "$CONTAINER_APP" --query name -o tsv
+          az functionapp show -g "$AZURE_RG" -n "$FUNCTION_APP" --query name -o tsv
+          case "$GHCR_REGISTRY_MODE" in
+            private)
+              az containerapp registry list -g "$AZURE_RG" -n "$CONTAINER_APP" --query '[].server' -o tsv | grep -Fx ghcr.io
+              ;;
+            public) echo "Public image pull approved; no private registry credential required." ;;
+            *) echo "Explicit GHCR_REGISTRY_MODE required (public/private)." >&2; exit 1 ;;
+          esac
+      - name: Update existing Container App and verify the release
+        run: |
+          set -euo pipefail
+          az containerapp update -g "$AZURE_RG" -n "$CONTAINER_APP" --image "$IMAGE_DIGEST" --set-env-vars "API_VERSION=$RELEASE_VERSION" "MODEL_VERSION=$EXPECTED_MODEL_VERSION" --only-show-errors --output none
+          FQDN="$(az containerapp show -g "$AZURE_RG" -n "$CONTAINER_APP" --query properties.configuration.ingress.fqdn -o tsv)"
+          curl --fail --silent --show-error --retry 8 --retry-all-errors --retry-delay 5 --max-time 15 "https://$FQDN/health" >/dev/null
+          for i in $(seq 1 12); do
+            if curl --fail --silent --show-error --max-time 15 "https://$FQDN/version" > "$RUNNER_TEMP/version.json" && python -c 'import json,os,sys; v=json.load(open(sys.argv[1])); sys.exit(v.get("api_version") != os.environ["RELEASE_VERSION"] or v.get("model_version") != os.environ["EXPECTED_MODEL_VERSION"])' "$RUNNER_TEMP/version.json"; then
+              break
+            fi
+            test "$i" -lt 12 || exit 1
+            sleep 5
+          done
+      - name: Deploy existing Flex Consumption Function App
+        run: |
+          set -euo pipefail
+          az functionapp deployment source config-zip --resource-group "$AZURE_RG" --name "$FUNCTION_APP" --src "$RUNNER_TEMP/functions.zip" --build-remote true --only-show-errors --output none
+          az functionapp function list -g "$AZURE_RG" -n "$FUNCTION_APP" --query '[].name' -o tsv
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: deployed-api-version
+          path: ${{ runner.temp }}/version.json

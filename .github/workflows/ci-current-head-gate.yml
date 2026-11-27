@@ -1,0 +1,123 @@
+name: DSCC current-head integration gate (offline)
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/ci-current-head-gate.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  pull-requests: read
+jobs:
+  infrastructure-first:
+    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.head.ref == 'ci/github-actions' && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify the independent infrastructure change against main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          base="$(gh api "repos/$GH_REPO/git/ref/heads/main" --jq .object.sha)"
+          head="$(gh api "repos/$GH_REPO/pulls/24" --jq .head.sha)"
+          state="$(gh api "repos/$GH_REPO/pulls/24" --jq .state)"
+          merged="$(gh api "repos/$GH_REPO/pulls/24" --jq .merged)"
+          if [[ "$state" != open ]]; then
+            test "$merged" = true
+            git merge-base --is-ancestor "$head" "$base"
+          fi
+          [[ "$base" =~ ^[a-f0-9]{40}$ && "$head" =~ ^[a-f0-9]{40}$ ]]
+          tree="$(git merge-tree --write-tree "$base" "$head")"
+          [[ "$tree" =~ ^[a-f0-9]{40}$ ]]
+          while IFS= read -r path; do
+            case "$path" in
+              infra/*|docs/azure-setup-evidence-2026-11-27.md|.github/workflows/ci-infra.yml|.github/workflows/azure-oidc-readonly.yml) ;;
+              *) echo "Unexpected non-infrastructure change: $path"; exit 1 ;;
+            esac
+          done < <(git diff --name-only "$base" "$tree")
+          printf 'Main: %s\nPR24: %s\nPreview tree: %s\n' "$base" "$head" "$tree"
+          echo 'PR #24 merges cleanly into main, with infrastructure-only changes. No merge or Azure operation performed.' >> "$GITHUB_STEP_SUMMARY"
+  integration-gate:
+    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.head.ref == 'ci/github-actions' && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Record current PR heads and main using read-only GitHub API
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, re, subprocess
+          from pathlib import Path
+          repo = os.environ["GH_REPO"]
+          def api(path):
+              return json.loads(subprocess.check_output(["gh", "api", f"repos/{repo}/{path}"], text=True))
+          def sha(value):
+              if not re.fullmatch(r"[a-f0-9]{40}", value):
+                  raise RuntimeError("Invalid Git SHA")
+              return value
+          base = sha(api("git/ref/heads/main")["object"]["sha"])
+          expected = ["24","14","17","18","20","21","19","22","23","25"]
+          heads = []
+          merged = []
+          for number in expected:
+              pr = api(f"pulls/{number}")
+              if (pr["head"]["repo"] or {}).get("full_name") != repo or pr["base"]["ref"] != "main":
+                  raise RuntimeError(f"PR #{number} changed repository or base; review the release sequence")
+              if pr["state"] != "open":
+                  if not pr["merged"]:
+                      raise RuntimeError(f"PR #{number} closed without merge; review release sequence")
+                  merged.append(number)
+              heads.append([number, sha(pr["head"]["sha"])])
+          Path("current-heads.json").write_text(json.dumps({"base":base,"heads":heads,"already_merged":merged}, indent=2))
+          print(Path("current-heads.json").read_text())
+          PY
+      - name: Run pinned 1.1.0 integration gate against the recorded snapshot
+        run: |
+          set -euo pipefail
+          # Candidate 1.1.0 gate from #25, pinned to a specific commit pending independent review.
+          mkdir -p tests/release
+          git show 6a5cabe40258e72c054b6fd7d449368bde285ce9:tests/release/verify_conflict_gate.py > tests/release/verify_conflict_gate.py
+          python - <<'PY'
+          import importlib.util, json, subprocess
+          from pathlib import Path
+          snapshot = json.loads(Path("current-heads.json").read_text())
+          for sha in [snapshot["base"], *(entry[1] for entry in snapshot["heads"])]:
+              subprocess.run(["git","cat-file","-e",sha+"^{commit}"],check=True)
+          for number, sha in snapshot["heads"]:
+              if number in snapshot["already_merged"]:
+                  subprocess.run(["git","merge-base","--is-ancestor",sha,snapshot["base"]],check=True)
+                  print(f"PR #{number}: existing merge ancestry verified")
+          spec = importlib.util.spec_from_file_location("pinned_gate", "tests/release/verify_conflict_gate.py")
+          gate = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(gate)
+          gate.BASE = snapshot["base"]
+          gate.HEADS = [tuple(entry) for entry in snapshot["heads"]]
+          gate.PINS = dict(gate.HEADS)
+          gate.main()
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: current-head-integration-evidence
+          path: |
+            current-heads.json
+            release-conflict-gate.json
+          if-no-files-found: warn
