@@ -4,10 +4,10 @@ No automatic merge is authorized. All branches remain separate; this plan is for
 team review. Individual mergeability against main does not prove successive
 merges are conflict-free.
 
-## Verified overlap audit
+## Historical overlap audit — 26 November (1.0.0)
 
 Changed-filename intersections were checked across #14, #17–#25. These overlaps
-are not all proven Git conflicts. Current blob SHA prefixes:
+are not all proven Git conflicts. Historical blob SHA prefixes:
 
 | File | #14 | #17 | #18 | #20 |
 |---|---|---|---|---|
@@ -22,8 +22,8 @@ Its own observability changes should be reviewed against the final API after
 #17 integration. #21–#25 currently have no changed-file intersections with the
 other technical PRs; this is not a guarantee of runtime compatibility.
 
-## Proposed sequence
-1. Confirm data/derivative rights and final 19/21 feature decision with Elias
+## Historical proposed sequence — superseded by infrastructure-first plan below
+1. Confirm data/derivative rights and feature contract with Elias
    and the team. If model changes, synchronize ONNX, API schema, Functions
    contract and E2E fixtures before any integration. Obtain fresh reviews.
 2. #14: agree version-specific output naming, superseded events, queue
@@ -88,3 +88,9 @@ After moving the #14 overview to docs/project-overview.md and restoring its root
 Sequential preview run 45884397493 assembled all ten pinned PRs in a detached disposable worktree: #14 → #17 → #18 → #20 → #21 → #19 → #22 → #23 → #24 → #25. Only #18 needed resolution of .gitignore, README.md and model/features.json. For this preview, the #14 union of ignore rules, #17 API code/CI, #18 schema metadata (same 21 inputs), and proposed docs/release-readme.md were preserved. 15 API tests, 70 pipeline tests, 2 real ONNX integration tests, 16 dashboard tests and the R4 mocked CLI guards passed. Ruff passed; no training download or cloud operations. The exact pins and resolved paths are in the sequential-preview artifact. No remote PR merged. The schema choice is provisional, not team approval. For actual integration obtain independent review and resolve the remaining three files on the appropriate branch, rerun CI on each updated head, and re-check dataset/artifact authorization.
 
 The #25 release gate later checked all C(10,2) = 45 pairs and the same ten-step sequence on synchronized heads without manual resolution. It also ran API, pipeline, E2E, dashboard and mocked R4 guards plus a local Docker build under 500 MB. Its pins were refreshed from the superseded #14/#25 commits to the reviewed heads; the PR head is injected into the gate so this self-referential check is not stale. This remains an offline rehearsal: no remote merge, GHCR push, Azure deployment, dataset download or acceptance scenario is performed.
+
+## Current 27 November plan — 1.1.0 / infrastructure first
+
+#24 at 78ac96d is independently approved for preflight/documentation by Elias; CI 45962535851 is green. Review and merge it first after human authorization; dispatch READ-DSCC on main with personal production approval. No model or dataset needed for the read-only OIDC test. Refresh actual quota, Free Tier, RBAC and what-if before any provision. Do not conflate preflight with permission to deploy.
+
+R1/R4 selected ONNX 1.1.0 / 19 features (blob 09ee933f); #17 and #18 synchronized their artifacts and schema. #20 now contains only observability code, no duplicate API/model files; #21 aligned its schema and 72 tests, #19 updated sample version with 17 tests, #22 passed 2 ONNX + 3 Azurite tests with 1.1.0. New current-head release gate must verify all remaining conflicts and functional compatibility. Proposed subsequent order: #14 → #17 → #18 → #20 → #21 → #19 → #22 → #23 → #25, subject to team review, rights clearance and current CI. Do not use the historical 21-feature reports as proof of the new release. No automatic merge.
