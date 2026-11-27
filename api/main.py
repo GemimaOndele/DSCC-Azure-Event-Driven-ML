@@ -20,7 +20,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 
 API_VERSION = os.getenv("API_VERSION", "1.0.0")
-MODEL_VERSION = os.getenv("MODEL_VERSION", "1.0.0")
+MODEL_VERSION = os.getenv("MODEL_VERSION", "1.1.0")
 MODEL_PATH = Path(
     os.getenv(
         "MODEL_PATH",
@@ -77,7 +77,12 @@ NoInternetService = Literal["No", "Yes", "No internet service"]
 
 
 class CustomerFeatures(BaseModel):
-    """One client row: customerID is an identifier, the other 21 fields are model inputs."""
+    """One client row: customerID is an identifier, the other 19 fields are model inputs.
+
+    The case workbook also carries numAdminTickets/numTechTickets, but their
+    availability before Churn is not documented. They are rejected (extra='forbid')
+    so the API cannot silently send them to the 1.1.0 ONNX model.
+    """
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
@@ -108,8 +113,6 @@ class CustomerFeatures(BaseModel):
     ]
     MonthlyCharges: Annotated[float, Field(ge=0, le=10_000)]
     TotalCharges: Annotated[float | None, Field(ge=0, le=1_000_000)] = None
-    numAdminTickets: Annotated[int, Field(ge=0, le=10_000)]
-    numTechTickets: Annotated[int, Field(ge=0, le=10_000)]
 
     @field_validator("MonthlyCharges", "TotalCharges")
     @classmethod

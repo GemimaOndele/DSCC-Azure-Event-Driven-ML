@@ -26,8 +26,6 @@ CUSTOMER = {
     "PaymentMethod": "Electronic check",
     "MonthlyCharges": 55.0,
     "TotalCharges": 660.0,
-    "numAdminTickets": 0,
-    "numTechTickets": 1,
 }
 
 SECOND_CUSTOMER = {
@@ -59,7 +57,6 @@ THIRD_CUSTOMER = {
     "Contract": "Two year",
     "MonthlyCharges": 20.05,
     "TotalCharges": 962.4,
-    "numTechTickets": 0,
 }
 
 
@@ -73,12 +70,12 @@ def test_prediction_and_api_routes() -> None:
     assert health.status_code == 200
     assert health.json()["model_loaded"] is True
     assert health.json()["model_load_time_ms"] >= 0
-    assert version.json() == {"api_version": "1.0.0", "model_version": "1.0.0"}
+    assert version.json() == {"api_version": "1.0.0", "model_version": "1.1.0"}
     assert response.status_code == 200
     assert response.json()["prediction"] in {"No", "Yes"}
     assert 0.0 <= response.json()["churn_probability"] <= 1.0
     assert 0.0 <= response.json()["confidence"] <= 1.0
-    assert response.json()["model_version"] == "1.0.0"
+    assert response.json()["model_version"] == "1.1.0"
     assert metrics.json()["inference_calls"] == 1
     assert metrics.json()["inferred_rows"] == 1
     assert metrics.json()["average_latency_ms"] >= 0
@@ -110,7 +107,7 @@ def test_batch_predict_multi_client_csv_rows() -> None:
 
     assert response.status_code == 200
     body = response.json()
-    assert body["model_version"] == "1.0.0"
+    assert body["model_version"] == "1.1.0"
     assert body["latency_ms"] >= 0
     assert len(body["predictions"]) == 3
     assert [p["customerID"] for p in body["predictions"]] == [
@@ -128,7 +125,7 @@ def test_batch_predict_multi_client_csv_rows() -> None:
     assert summary["rows"] == 3
     assert summary["atRisk"] == sum(p["label"] for p in body["predictions"])
     assert summary["threshold"] == DECISION_THRESHOLD
-    assert summary["model_version"] == "1.0.0"
+    assert summary["model_version"] == "1.1.0"
     assert abs(
         summary["avgChurnProbability"]
         - sum(p["churn_probability"] for p in body["predictions"]) / 3
@@ -152,11 +149,24 @@ def test_batch_extra_or_missing_field_returns_422() -> None:
         )
         incomplete = client.post(
             "/predict/batch",
-            json={"rows": [{k: v for k, v in CUSTOMER.items() if k != "numTechTickets"}]},
+            json={"rows": [{k: v for k, v in CUSTOMER.items() if k != "tenure"}]},
         )
 
     assert extra.status_code == 422
     assert incomplete.status_code == 422
+
+
+def test_retired_ticket_counters_are_rejected() -> None:
+    """The 1.1.0 contract has 19 inputs; ticket columns must not reach ONNX."""
+    with TestClient(app) as client:
+        admin = client.post("/predict", json={**CUSTOMER, "numAdminTickets": 0})
+        tech = client.post(
+            "/predict/batch",
+            json={"rows": [{**CUSTOMER, "numTechTickets": 1}]},
+        )
+
+    assert admin.status_code == 422
+    assert tech.status_code == 422
 
 
 def test_batch_unknown_category_returns_422() -> None:

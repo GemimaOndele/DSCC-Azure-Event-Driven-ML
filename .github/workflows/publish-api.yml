@@ -5,7 +5,7 @@ name: Publish preview churn API image to GHCR (manual)
 # It is deliberately MANUAL and OPT-IN: no push trigger, so it cannot overwrite
 # the future release tags published from main by the integrated workflow in #23.
 # Only the immutable tag `preview-<full-commit-sha>` is pushed here. The semantic
-# version tag `1.0.0` and the release tag `sha-<commit>` are RESERVED for #23,
+# version tag `1.1.0` and the release tag `sha-<commit>` are RESERVED for #23,
 # after the team has validated the rights to the model artefact.
 #
 # Historical note: run 45880950088 proved that a branch publication is
