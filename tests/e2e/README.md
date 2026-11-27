@@ -1,7 +1,6 @@
 # DSCC acceptance test plan — issue #11
 
-Status: prepared, not executed on Azure. Offline pipeline CI has 61 passing tests at
-commit 192e4c0, but that is not the cloud acceptance test.
+Status: prepared, not executed on Azure. Offline pipeline CI has 72 passing tests on d4e5138 (1.1.0, 19 inputs); this is not cloud acceptance.
 
 ## Local integration (after #17, #18, #21 are merged)
 From the repository root in Python 3.12:
@@ -44,3 +43,7 @@ authorized. No automatic provisioning or fault injection into a shared environme
 After demonstration, cleanup is a separate authorized operation and must be evidenced.
 
 R1 branch GHCR publication observed in run 45880950088: tag 1.0.0 and sha-6fb916d19230cdd29fccffccdf3722704f1f8b25, digest sha256:7932660bde49aeeaffad67fd58f5609a80ab123b11b632d663a0f88adab3b3f8. This proves branch publication, not integrated main, model publication authorization or Azure deployment. E11 remains unexecuted.
+
+## Current offline rehearsal snapshot — 27 November
+
+The two rehearsal scripts pin main c67bafc (merged #24 and #26) and the nine remaining PRs; CI injects the actual QA PR head. Refresh the explicit snapshot after any other PR advances; the dynamic #23 gate is an additional current-head check. Both fail on any conflict, and store evidence outside the checkout (DSCC_REPORT_DIR or a temporary directory). For local runs use the QA head and full Git history, and set PR22_HEAD to that exact SHA. The sequential check validates the matching schema, actual 1.1.0 ONNX blob and offline integration tests; the pairwise check covers all 55 pairs. No cloud acceptance test has run.

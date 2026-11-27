@@ -1,27 +1,25 @@
-"""Sequential integration preview in a disposable worktree only.
-
-No remote merges, ref updates or dataset downloads. Current 21-feature schema is
-a test assumption, not a team decision. Unexpected conflicts fail closed.
-"""
+"""Sequential integration preview of model 1.1.0; fail closed, no remote writes."""
 import json
+import os
 import subprocess
 from pathlib import Path
 import tempfile
 import shutil
 import sys
 
-BASE = "c423d6a79dcdeca319e0e7007d9f7d6394356961"
+BASE = "c67bafc929eda90abf27d91c69f1257661f8e7e9"
 HEADS = [
-    ("14", "867130942074a04d77805a47de5baa4cc3a3fd96"),
-    ("17", "5886584331997d5b1b5fae7f6602c58d876f0221"),
-    ("18", "3cb9ffe327abdd68a58cd2c9d23a6797ee2f5bf9"),
-    ("20", "b81277f6d66a1d9e2b503e6fc54e7200732eb01f"),
-    ("21", "503280aa3a03ea74bcf33b913c5999de39a8d93f"),
-    ("19", "2f57b6495f5f434a1e26985e7333b9439f0c5048"),
-    ("22", "52103dd0a8a8ee73bb55bdde6f5004de9f81b30c"),
-    ("23", "fdfc4325eb18c9e5bd95d26f25b307f956c9657c"),
-    ("24", "a981b2626deab860139b143a6b4029ce56a7998d"),
-    ("25", "c2ac5cb11cf7b5ac010611bd689098895021da75"),
+    ("24", "78ac96d138b2e565935e92138ea60d089d27c0ec"),
+    ("26", "a3f5b23387777b0c18754ba4db2468bf20a140c4"),
+    ("14", "131fd715f67a983169451be9492a9b8d1e2b74f1"),
+    ("17", "846a697d70fb388cfb9f983bf3b2c14e0a019c2f"),
+    ("18", "e7d827263c9dc305656016568be9f8c99ed8f71a"),
+    ("20", "65ff2d2ee0e15c41db43fe715be295abbf005229"),
+    ("21", "d4e51388cb6979261867fd728748ad7b0f43dbd6"),
+    ("19", "c8528772930cd35e1099c43701672b90bd77a5c1"),
+    ("22", os.environ.get("PR22_HEAD", "8f41a990bfbc34a390003ae2d6704dd6e9105285")),
+    ("23", "478bc82a66dcaef82827ffe50567b8d43aa6d69b"),
+    ("25", "ccafaf9ef35c51e12bc5c0e0f4ea6efe18c11968"),
 ]
 PINS = dict(HEADS)
 ROOT = Path(__file__).resolve().parents[2]
@@ -38,35 +36,38 @@ def content(sha, path):
 
 def main():
     report = []
+    before = git(ROOT, "status", "--porcelain").stdout
+    evidence = Path(os.environ.get("DSCC_REPORT_DIR") or tempfile.mkdtemp(prefix="dscc-evidence-"))
+    evidence.mkdir(parents=True, exist_ok=True)
+    assert ROOT not in evidence.resolve().parents and evidence.resolve() != ROOT
     old_head = git(ROOT, "rev-parse", "HEAD").stdout.strip()
     candidate = Path(tempfile.mkdtemp(prefix="dscc-preview-")) / "tree"
     try:
         git(ROOT, "worktree", "add", "--detach", str(candidate), BASE)
         git(candidate, "config", "user.name", "DSCC disposable integration")
         git(candidate, "config", "user.email", "preview@invalid.example")
-        allowed = {"README.md", ".gitignore", "model/features.json", ".github/workflows/ci-ml.yml"}
         for number, sha in HEADS:
+            if number in {"24", "26"}:
+                git(ROOT, "merge-base", "--is-ancestor", sha, BASE)
+                report.append({"pr": number, "sha": sha, "already_merged": True})
+                print(f"PR #{number}: existing merge verified", flush=True)
+                continue
             result = git(candidate, "merge", "--no-ff", "--no-commit", sha, check=False)
             conflicts = git(candidate, "diff", "--name-only", "--diff-filter=U").stdout.splitlines()
-            if result.returncode and (not conflicts or set(conflicts) - allowed):
-                raise RuntimeError(f"PR {number}: unexpected conflict {conflicts}: {result.stderr}")
-            for path in conflicts:
-                # The original texts remain in their branches. Keep the union
-                # of ignore rules, current API README and synchronized ML CI.
-                source = {"README.md": "17", ".gitignore": "14",
-                          "model/features.json": "18", ".github/workflows/ci-ml.yml": "17"}[path]
-                (candidate / path).write_bytes(content(PINS[source], path))
-                git(candidate, "add", "--", path)
+            assert result.returncode == 0 and not conflicts, f"PR #{number}: {conflicts} {result.stderr}"
             # Commit only into the detached disposable worktree.
             git(candidate, "commit", "-m", f"preview PR {number}", "--allow-empty")
             report.append({"pr": number, "sha": sha, "resolved": conflicts})
             print(f"PR #{number}: {'resolved '+', '.join(conflicts) if conflicts else 'clean'}", flush=True)
-        # Canonical README proposal remains in docs; only the disposable tree
-        # uses it at the root. No remote branch is overwritten.
-        (candidate / "README.md").write_bytes((candidate / "docs/release-readme.md").read_bytes())
         model = json.loads((candidate / "model/features.json").read_text())
         worker = json.loads((candidate / "functions/contract/features.json").read_text())
-        assert model["feature_count"] == worker["feature_count"] == 21
+        assert model == worker
+        count = model["feature_count"]
+        version = model["model_version"]
+        assert type(count) is int and count == len(model["features"]) > 0
+        assert version == "1.1.0" and count == 19
+        assert {"numAdminTickets", "numTechTickets"}.isdisjoint(f["name"] for f in model["features"])
+        assert git(candidate, "hash-object", f"model/model-{version}.onnx").stdout.strip() == "09ee933f16731e7218189d19d7c3ab98162de34e"
         assert model["features"] == worker["features"]
         assert model["identifier"] == worker["identifier"]
         # Ensure newer R1 API code survived the older R4 branch.
@@ -89,8 +90,8 @@ def main():
             ["bash", "tests/observability/test_guards.sh"],
         ]:
             subprocess.run(args, cwd=candidate, check=True)
-        (ROOT / "sequential-preview.json").write_text(json.dumps({
-            "base": BASE, "prs": report, "schema": "21-feature preview only",
+        (evidence / "sequential-preview.json").write_text(json.dumps({
+            "base": BASE, "prs": report, "schema": {"model_version": version, "feature_count": count},
             "checks": ["schema equality", "API preservation", "ignore rules", "no tracked data",
                        "Ruff", "API pytest", "pipeline pytest", "ONNX E2E", "dashboard JS syntax and tests", "observability command guards"]
         }, indent=2))
@@ -98,6 +99,7 @@ def main():
         git(ROOT, "worktree", "remove", "--force", str(candidate), check=False)
         shutil.rmtree(candidate.parent, ignore_errors=True)
         assert git(ROOT, "rev-parse", "HEAD").stdout.strip() == old_head
+        assert git(ROOT, "status", "--porcelain").stdout == before
 
 
 if __name__ == "__main__":

@@ -1,32 +1,38 @@
 """Pairwise merge-conflict rehearsal. Never modifies refs, index or working tree."""
 import json
+import os
+import itertools
+import tempfile
 import re
 import subprocess
 from pathlib import Path
 
-# Immutable reviewed snapshot. Refresh explicitly if any PR advances.
-HEADS = {
-    "#14": "867130942074a04d77805a47de5baa4cc3a3fd96",
-    "#17": "5886584331997d5b1b5fae7f6602c58d876f0221",
-    "#18": "3cb9ffe327abdd68a58cd2c9d23a6797ee2f5bf9",
-    "#19": "2f57b6495f5f434a1e26985e7333b9439f0c5048",
-    "#20": "b81277f6d66a1d9e2b503e6fc54e7200732eb01f",
-    "#21": "503280aa3a03ea74bcf33b913c5999de39a8d93f",
-    "#23": "fdfc4325eb18c9e5bd95d26f25b307f956c9657c",
-    "#24": "a981b2626deab860139b143a6b4029ce56a7998d",
-    "#25": "c2ac5cb11cf7b5ac010611bd689098895021da75",
-}
-PAIRS = [
-    ("#14", "#17"), ("#14", "#18"), ("#14", "#20"),
-    ("#17", "#18"), ("#17", "#20"), ("#18", "#20"),
-    ("#17", "#21"), ("#18", "#21"), ("#19", "#21"),
-    ("#20", "#24"), ("#23", "#24"), ("#21", "#25"),
+BASE = "c67bafc929eda90abf27d91c69f1257661f8e7e9"
+HEADS = [
+    ("24", "78ac96d138b2e565935e92138ea60d089d27c0ec"),
+    ("26", "a3f5b23387777b0c18754ba4db2468bf20a140c4"),
+    ("14", "131fd715f67a983169451be9492a9b8d1e2b74f1"),
+    ("17", "846a697d70fb388cfb9f983bf3b2c14e0a019c2f"),
+    ("18", "e7d827263c9dc305656016568be9f8c99ed8f71a"),
+    ("20", "65ff2d2ee0e15c41db43fe715be295abbf005229"),
+    ("21", "d4e51388cb6979261867fd728748ad7b0f43dbd6"),
+    ("19", "c8528772930cd35e1099c43701672b90bd77a5c1"),
+    ("22", os.environ.get("PR22_HEAD", "8f41a990bfbc34a390003ae2d6704dd6e9105285")),
+    ("23", "478bc82a66dcaef82827ffe50567b8d43aa6d69b"),
+    ("25", "ccafaf9ef35c51e12bc5c0e0f4ea6efe18c11968"),
 ]
+HEADS = {"#" + number: sha for number, sha in HEADS}
+PAIRS = list(itertools.combinations(HEADS, 2))
 
 
 def main():
     before = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
     rows = []
+    before_status = subprocess.check_output(["git", "status", "--porcelain"], text=True)
+    evidence = Path(os.environ.get("DSCC_REPORT_DIR") or tempfile.mkdtemp(prefix="dscc-evidence-")).resolve()
+    root = Path.cwd().resolve()
+    assert root not in evidence.parents and root != evidence
+    evidence.mkdir(parents=True, exist_ok=True)
     for left, right in PAIRS:
         result = subprocess.run(
             ["git", "merge-tree", "--write-tree", "--name-only", "--no-messages",
@@ -43,8 +49,8 @@ def main():
                      "paths": files})
     after = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
     assert before == after, "HEAD must not change"
-    assert not subprocess.check_output(["git", "status", "--porcelain"], text=True).strip()
-    Path("merge-rehearsal.json").write_text(json.dumps({"heads": HEADS, "pairs": rows}, indent=2))
+    assert subprocess.check_output(["git", "status", "--porcelain"], text=True) == before_status
+    (evidence / "merge-rehearsal.json").write_text(json.dumps({"base": BASE, "heads": HEADS, "pairs": rows}, indent=2))
     report = ["# Pairwise conflict rehearsal", "",
               "Pairwise results only: no merge commit, push or runtime guarantee.", "",
               "| PR pair | Outcome | Conflicting paths |", "|---|---|---|"]
@@ -53,8 +59,10 @@ def main():
         outcome = "CONFLICT" if row["conflict"] else "clean"
         report.append(f"| {row['left']} / {row['right']} | {outcome} | {paths} |")
     text = "\n".join(report) + "\n"
-    Path("merge-rehearsal.md").write_text(text)
+    (evidence / "merge-rehearsal.md").write_text(text)
     print(text)
+    print(f'{sum(not row["conflict"] for row in rows)}/{len(rows)} pairs clean')
+    assert not any(row['conflict'] for row in rows), 'Conflicts remain'
 
 
 if __name__ == "__main__":
