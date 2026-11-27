@@ -46,15 +46,17 @@ flowchart LR
 
 ## Model and API
 
-The existing model is logistic regression exported to ONNX (1.0.0), stratified
-80/20 split with seed 42, median imputation, scaling and one-hot encoding.
-The current preview uses 21 predictive inputs, excluding customerID and Churn.
-The two ticket counters have no demonstrated pre-churn availability. Reported
-ablation: 21 features AUC 0.9273/F1 0.7328; 19 features AUC 0.8413/F1 0.6136.
-Neither the 21/19 selection nor the case workbook and derivative publication
-rights is finalized by this README. Do not fetch the workbook or publish an
+The delivered model is a logistic regression exported to ONNX (`1.1.0`),
+stratified 80/20 split with seed 42, median imputation, scaling and one-hot
+encoding. It uses **19 predictive inputs**, excluding `customerID`, `Churn`,
+and the two ticket counters whose availability before churn is not documented.
+The retired `1.0.0` model used 21 inputs and reported AUC 0.9273/F1 0.7328;
+the delivered 19-feature model reports AUC 0.8413/F1 0.6136 on the same held-out
+split (see `model/FEATURE_RISK_ANALYSIS.md`). The case workbook and derivative
+publication rights are still pending: do not fetch the workbook or publish an
 artifact without appropriate permission. The case workbook is not the raw IBM
-dataset. See model/DATASET.md and model/FEATURE_RISK_ANALYSIS.md.
+dataset. See `model/DATASET.md`, `model/TRAINING_EVIDENCE.md` and
+`model/FEATURE_RISK_ANALYSIS.md`.
 
 Run the existing model offline with synthetic inputs only:
 ```bash

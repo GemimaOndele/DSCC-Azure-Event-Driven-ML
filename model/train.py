@@ -21,7 +21,10 @@ from prepare_data import ensure_dataset
 
 
 RANDOM_SEED = 42
-MODEL_VERSION = "1.0.0"
+MODEL_VERSION = "1.1.0"
+# The case workbook still contains these columns, but their availability before
+# Churn is not documented. The 27/11/2026 decision excludes them from the model.
+EXCLUDED_FROM_MODEL = ("numAdminTickets", "numTechTickets")
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = ROOT / "model"
 MODEL_PATH = OUTPUT_DIR / f"model-{MODEL_VERSION}.joblib"
@@ -47,7 +50,7 @@ def main() -> None:
     data = data.drop(columns=[IDENTIFIER])
     data["TotalCharges"] = pd.to_numeric(data["TotalCharges"], errors="coerce")
 
-    X = data.drop(columns=[TARGET])
+    X = data.drop(columns=[TARGET, *EXCLUDED_FROM_MODEL])
     y = data[TARGET].map({"No": 0, "Yes": 1})
 
     if y.isna().any():

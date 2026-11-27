@@ -1,5 +1,5 @@
 {
-  "model_version": "1.0.0",
+  "model_version": "1.1.0",
   "random_seed": 42,
   "test_size": 1409,
   "decision_threshold": 0.5,
@@ -22,22 +22,20 @@
     "PaperlessBilling",
     "PaymentMethod",
     "MonthlyCharges",
-    "TotalCharges",
-    "numAdminTickets",
-    "numTechTickets"
+    "TotalCharges"
   ],
   "model": {
-    "auc": 0.9272804774083547,
-    "f1": 0.7328072153325818,
-    "accuracy": 0.8317955997161107,
+    "auc": 0.8412978893797307,
+    "f1": 0.6136125654450262,
+    "accuracy": 0.7381121362668559,
     "confusion_matrix": [
       [
-        847,
-        188
+        747,
+        288
       ],
       [
-        49,
-        325
+        81,
+        293
       ]
     ]
   },
@@ -58,9 +56,9 @@
   },
   "dataset": {
     "rows": 7043,
-    "features": 21,
+    "features": 19,
     "positive_class": "Yes",
     "positive_rows": 1869
   },
-  "onnx_max_probability_error": 2.228068780585346e-07
+  "onnx_max_probability_error": 1.4945780096864425e-07
 }

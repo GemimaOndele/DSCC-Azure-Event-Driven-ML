@@ -31,11 +31,11 @@ jobs:
       - name: Run API tests
         run: python -m pytest api/tests -q
       - name: Build Docker image
-        run: docker build -f api/Dockerfile -t churn-ml-api:1.0.0 .
+        run: docker build -f api/Dockerfile -t churn-ml-api:1.1.0 .
       - name: Assert image size below 500 MB
         run: |
           set -euo pipefail
-          SIZE=$(docker image inspect churn-ml-api:1.0.0 --format '{{.Size}}')
+          SIZE=$(docker image inspect churn-ml-api:1.1.0 --format '{{.Size}}')
           echo "Docker image size: $SIZE bytes (limit 500000000)" >> "$GITHUB_STEP_SUMMARY"
           test "$SIZE" -lt 500000000
 

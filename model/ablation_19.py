@@ -1,8 +1,11 @@
-"""Reproducible ablation: train the same model with and without the two ticket counters.
+"""Reproducible retrospective ablation: 19 features (committed) vs legacy 21.
 
-This is a decision aid for the open 19 vs 21 feature question (issues #2, #4,
-#18). It never writes a model, a metric file or a split: the shared ONNX
-artefact and model/metrics.json stay untouched. Run with:
+The 27/11/2026 decision removed the two ticket counters because their
+availability before ``Churn`` is not documented. This script keeps the evidence
+for the decision (issues #2, #4, #18): same seed, split and pipeline, with the
+two columns added back as the retired 1.0.0 configuration. It never writes a
+model, a metric file or a split: the shared ONNX artefact and
+model/metrics.json stay untouched. Run with:
 
     py -3.12 model/ablation_19.py
 """
@@ -101,18 +104,16 @@ def _score(features: list[str]) -> dict[str, object]:
 
 def main() -> None:
     contract = json.loads((ROOT / "model" / "features.json").read_text(encoding="utf-8"))
-    expected = [feature["name"] for feature in contract["features"]]
-    without_tickets = [
-        name for name in expected if name not in TICKET_COLUMNS
-    ]
+    committed = [feature["name"] for feature in contract["features"]]
+    legacy = committed + list(TICKET_COLUMNS)
     print(
         json.dumps(
             {
                 "random_seed": RANDOM_SEED,
-                "shared_model_version": contract["model_version"],
-                "with_ticket_counters": _score(expected),
-                "without_ticket_counters": _score(without_tickets),
-                "note": "Read-only ablation; the committed ONNX artefact is unchanged.",
+                "committed_model_version": contract["model_version"],
+                "committed_19_features": _score(committed),
+                "retired_21_features": _score(legacy),
+                "note": "Read-only retrospective ablation; the committed ONNX artefact is unchanged.",
             },
             indent=2,
         )
