@@ -1,0 +1,74 @@
+name: Publish preview churn API image to GHCR (manual)
+
+# Preview-only workflow for the R1 branch (issue #5 / PDF section 4.2).
+#
+# It is deliberately MANUAL and OPT-IN: no push trigger, so it cannot overwrite
+# the future release tags published from main by the integrated workflow in #23.
+# Only the immutable tag `preview-<full-commit-sha>` is pushed here. The semantic
+# version tag `1.1.0` and the release tag `sha-<commit>` are RESERVED for #23,
+# after the team has validated the rights to the model artefact.
+#
+# Historical note: run 45880950088 proved that a branch publication is
+# technically possible. It is not an authorisation to distribute or deploy.
+# No secret is used beyond the short-lived GITHUB_TOKEN (packages: write only).
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_preview:
+        description: "Type PUBLISH_PREVIEW to publish a preview-only image"
+        required: true
+        default: "NO"
+        type: choice
+        options:
+          - "NO"
+          - "PUBLISH_PREVIEW"
+
+permissions:
+  contents: read
+
+jobs:
+  publish-preview:
+    if: github.ref == 'refs/heads/feat/ml-api' && github.event.inputs.confirm_preview == 'PUBLISH_PREVIEW'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: api/requirements-dev.txt
+      - name: Validate the API before publishing
+        run: |
+          python -m pip install -r api/requirements-dev.txt
+          python -m pytest api/tests -q
+      - name: Build, verify and publish preview-SHA tag only
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = "refs/heads/feat/ml-api"
+          IMAGE="ghcr.io/$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')/churn-api"
+          VERSION="$(python -c 'import json; print(json.load(open("model/features.json"))["model_version"])')"
+          echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'
+          TAG="preview-$GITHUB_SHA"
+          # Hard guard: never create a mutable release tag from a feature branch.
+          test "$TAG" != "$VERSION"
+          test "$TAG" != "sha-$GITHUB_SHA"
+          case "$TAG" in
+            preview-*) ;;
+            *) echo "Refusing to publish a non-preview tag" >&2; exit 1 ;;
+          esac
+          docker build -f api/Dockerfile -t "$IMAGE:$TAG" .
+          SIZE="$(docker image inspect "$IMAGE:$TAG" --format '{{.Size}}')"
+          echo "Image size: $SIZE bytes (limit 500000000)" >> "$GITHUB_STEP_SUMMARY"
+          test "$SIZE" -lt 500000000
+          echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker push "$IMAGE:$TAG"
+          DIGEST="$(docker image inspect "$IMAGE:$TAG" --format '{{index .RepoDigests 0}}')"
+          echo "Published preview-only tag $IMAGE:$TAG ($DIGEST)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Release tags $IMAGE:$VERSION and $IMAGE:sha-<commit> are reserved for #23 from main." >> "$GITHUB_STEP_SUMMARY"

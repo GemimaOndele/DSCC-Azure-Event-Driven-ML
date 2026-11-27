@@ -14,7 +14,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
       - run: bash -n infra/observability.sh && bash -n infra/trigger-alert.sh
       - run: bash tests/observability/test_guards.sh
-      - name: Confirm R4 contains no duplicate model or API
-        run: test ! -d api && test ! -d model && test ! -f .github/workflows/ci-ml.yml
+      - name: Verify the R4 delta contains no changes to R1
+        env:
+          R4_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          R1_HEAD=846a697d70fb388cfb9f983bf3b2c14e0a019c2f
+          git merge-base --is-ancestor "$R1_HEAD" "$R4_HEAD"
+          git diff --exit-code "$R1_HEAD" "$R4_HEAD" -- api model README.md .github/workflows/ci-ml.yml .github/workflows/publish-api.yml
+          echo "R4 preserves the exact R1 API, ONNX and workflow; no duplicated modifications."

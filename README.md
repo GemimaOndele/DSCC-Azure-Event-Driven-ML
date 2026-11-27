@@ -1,2 +1,111 @@
-# DSCC-Azure-Event-Driven-ML
-Event-driven Telecom Customer Churn prediction pipeline on Microsoft Azure, featuring serverless computing, distributed systems, observability and CI/CD.
+# DSCC — Azure Event-Driven Machine Learning
+
+ECE Paris · MSc 2 Artificial Intelligence · Distributed Systems and Cloud Computing in AI  
+Team: Gémima ONDELE POUROU, Yaye Aminata DIAGNE, Elias CREMNITER, Omar KRARTI  
+Defense: 2 December 2026.
+
+> Shared integration README, proposed for review. The feature branches are not yet merged or deployed.
+> Final feature selection and dataset/artifact authorization remain pending.
+
+## Purpose
+
+Score telecom attrition risk from small CSV batches using a serverless,
+queue-decoupled machine learning pipeline with reliable persistence, observability,
+CI/CD and controlled costs.
+
+```mermaid
+flowchart LR
+  B[Blob input] --> E[Event Grid] --> D[Dispatcher]
+  D --> Q[Storage Queue] --> W[Worker]
+  D --> R[Rejected reasons]
+  Q --> P[Poison Queue]
+  W --> A[FastAPI ONNX]
+  W --> O[Versioned result Blob]
+  W --> C[Cosmos / approved Table fallback]
+  C --> H[Recent endpoint]
+  H --> S[Dashboard]
+  A -.-> M[Application Insights / Log Analytics]
+  W -.-> M
+```
+
+## Component and evidence map
+
+| Domain | Source | Current review |
+|---|---|---|
+| Project organization | docs/project-overview.md; docs/technical-contract.md | #14 |
+| Azure access | docs/azure-access-guide.md | #15 merged |
+| ML API | api/; model/features.json | #17 |
+| Training and provenance | model/DATASET.md; model/FEATURE_RISK_ANALYSIS.md; model/TRAINING_EVIDENCE.md | #18 |
+| Event pipeline | functions/README.md; functions/src/ | #21 |
+| Dashboard | web/README.md | #19 |
+| Monitoring | docs/observability/README.md | #20 |
+| QA | tests/e2e/README.md | #22 |
+| CI/CD | .github/workflows/ci.yml; deploy.yml | #23 |
+| Azure IaC | infra/DEPLOYMENT.md | #24 |
+| Report and release evidence | docs/final-report-draft.md; docs/integration-plan.md; docs/evidence-register.md | #25 |
+
+## Model and API
+
+The delivered model is a logistic regression exported to ONNX (`1.1.0`),
+stratified 80/20 split with seed 42, median imputation, scaling and one-hot
+encoding. It uses **19 predictive inputs**, excluding `customerID`, `Churn`,
+and the two ticket counters whose availability before churn is not documented.
+The retired `1.0.0` model used 21 inputs and reported AUC 0.9273/F1 0.7328;
+the delivered 19-feature model reports AUC 0.8413/F1 0.6136 on the same held-out
+split (see `model/FEATURE_RISK_ANALYSIS.md`). The case workbook and derivative
+publication rights are still pending: do not fetch the workbook or publish an
+artifact without appropriate permission. The case workbook is not the raw IBM
+dataset. See `model/DATASET.md`, `model/TRAINING_EVIDENCE.md` and
+`model/FEATURE_RISK_ANALYSIS.md`.
+
+Run the existing model offline with synthetic inputs only:
+```bash
+python -m pip install -r api/requirements-dev.txt
+python -m uvicorn api.main:app --host 127.0.0.1 --port 8000
+```
+
+Routes: GET /health, GET /version, GET /metrics, POST /predict (single),
+POST /predict/batch ({"rows":[...]}). Construct the exact feature set from
+model/features.json. See tests/e2e/test_pipeline.py for synthetic examples.
+Do not pass customerID as a feature or Churn in the inference request.
+
+## Reliability and security
+
+Conditional ETag reads, validated CSV, one immutable output per blobName+ETag,
+metadata recovery, bounded five queue deliveries and poison queue.
+Concurrent duplicate delivery may trigger more than one inference call;
+persisted results are idempotent, not exactly-once execution. No raw customer
+values in rejection reasons. Managed identity and scoped RBAC; no shared
+passwords or keys. Public endpoints require explicit temporary synthetic-demo
+approval; CORS is not authentication.
+
+## Verification
+
+Run the following separately in Python 3.12 from the repository root after
+approved integration:
+```bash
+python -m pip install -r api/requirements-dev.txt -r functions/requirements.txt ruff==0.9.10
+python -m ruff check api functions
+python -m pytest api/tests -q
+python -m pytest functions/tests -q
+python -m pytest tests/e2e/test_pipeline.py -q
+node --test tests/dashboard/test_data.cjs
+bash tests/observability/test_guards.sh
+```
+The last script uses mock commands only; no alert or Azure resources created.
+See QA workflow for isolated Azurite SDK tests and conflict rehearsal. Training
+tests may fetch the case data; do not run them without authorization.
+
+## Deployment and cost
+
+One selected Azure for Students subscription, maximum budget USD 25 (internal
+target under USD 5), approved region/quotas, one project RG, budget alerts at
+20/50/80%. Credits are sufficient on both student subscriptions per coordinator;
+selection and actual deployment still require owner validation.
+Use infra/DEPLOYMENT.md, Bicep what-if then explicitly approved provisioning.
+GHCR branch publication is not a final release. Main publication and Azure
+deployment require artifact approval and explicit gates. Record real deployment,
+E2E, alerts, actual costs and eventual authorized cleanup before closing tickets.
+
+Current evidence: see docs/evidence-register.md and the PR CI logs; no unverified
+cloud claim. Team board: https://github.com/users/GemimaOndele/projects/5.

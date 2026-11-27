@@ -1,0 +1,38 @@
+{
+  "model_version": "1.1.0",
+  "source_dataset": "DSCC case workbook (not redistributed in the current tree; download/use permission pending) / sheet '01 Churn-Dataset'",
+  "identifier": "customerID",
+  "target": "Churn",
+  "positive_label": "Yes",
+  "decision_threshold": 0.5,
+  "feature_count": 19,
+  "numeric_preprocessing": "median imputation then StandardScaler",
+  "categorical_preprocessing": "OneHotEncoder(handle_unknown='ignore')",
+  "features": [
+    {"name": "gender", "kind": "categorical", "api_type": "string", "allowed_values": ["Female", "Male"]},
+    {"name": "SeniorCitizen", "kind": "numeric", "api_type": "integer", "allowed_range": [0, 1]},
+    {"name": "Partner", "kind": "categorical", "api_type": "string", "allowed_values": ["No", "Yes"]},
+    {"name": "Dependents", "kind": "categorical", "api_type": "string", "allowed_values": ["No", "Yes"]},
+    {"name": "tenure", "kind": "numeric", "api_type": "integer", "allowed_range": [0, 120]},
+    {"name": "PhoneService", "kind": "categorical", "api_type": "string", "allowed_values": ["No", "Yes"]},
+    {"name": "MultipleLines", "kind": "categorical", "api_type": "string", "allowed_values": ["No", "Yes", "No phone service"]},
+    {"name": "InternetService", "kind": "categorical", "api_type": "string", "allowed_values": ["DSL", "Fiber optic", "No"]},
+    {"name": "OnlineSecurity", "kind": "categorical", "api_type": "string", "allowed_values": ["No", "Yes", "No internet service"]},
+    {"name": "OnlineBackup", "kind": "categorical", "api_type": "string", "allowed_values": ["No", "Yes", "No internet service"]},
+    {"name": "DeviceProtection", "kind": "categorical", "api_type": "string", "allowed_values": ["No", "Yes", "No internet service"]},
+    {"name": "TechSupport", "kind": "categorical", "api_type": "string", "allowed_values": ["No", "Yes", "No internet service"]},
+    {"name": "StreamingTV", "kind": "categorical", "api_type": "string", "allowed_values": ["No", "Yes", "No internet service"]},
+    {"name": "StreamingMovies", "kind": "categorical", "api_type": "string", "allowed_values": ["No", "Yes", "No internet service"]},
+    {"name": "Contract", "kind": "categorical", "api_type": "string", "allowed_values": ["Month-to-month", "One year", "Two year"]},
+    {"name": "PaperlessBilling", "kind": "categorical", "api_type": "string", "allowed_values": ["No", "Yes"]},
+    {"name": "PaymentMethod", "kind": "categorical", "api_type": "string", "allowed_values": ["Bank transfer (automatic)", "Credit card (automatic)", "Electronic check", "Mailed check"]},
+    {"name": "MonthlyCharges", "kind": "numeric", "api_type": "number", "allowed_range": [0, 10000]},
+    {"name": "TotalCharges", "kind": "numeric", "api_type": "number-or-null", "allowed_range": [0, 1000000], "note": "blank cells are coerced to NaN then median-imputed in the pipeline"}
+  ],
+  "notes": [
+    "customerID identifies the client and is never a model input; Churn is the target and is never sent to the API.",
+    "This file is the single source of truth shared by PR #17 (api/main.py) and PR #18 (model/train.py). The 19-feature decision (27/11/2026) removes numAdminTickets and numTechTickets: their availability before Churn is not documented in the case workbook. The retired 21-feature artifact was 1.0.0; this contract describes model 1.1.0.",
+    "The decision threshold 0.5 was kept from contract #14 and validated on the held-out 20% split (see model/metrics.json and model/TRAINING_EVIDENCE.md on feat/ml-training).",
+    "The case workbook still contains the two ticket columns; the training pipeline selects only the 19 features listed here. The API must ignore (and, with extra='forbid', reject) those columns in client payloads."
+  ]
+}
