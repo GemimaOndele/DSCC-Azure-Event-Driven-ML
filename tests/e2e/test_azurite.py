@@ -146,6 +146,7 @@ def test_sdk_pipeline_queue_encoding_and_metadata_recovery(storage):
     assert origin == "https://dashboard.example"
     assert payload["count"] == 1
     item = payload["results"][0]
+    assert item["modelVersion"] == "1.1.0"
     assert item["rows"] == 3 and type(item["rows"]) is int
     assert type(item["avgChurnProbability"]) is float
     assert item["id"] == key and item["timestamp"] == persisted["timestamp"]
