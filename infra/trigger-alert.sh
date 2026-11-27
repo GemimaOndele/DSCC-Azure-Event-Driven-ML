@@ -18,7 +18,7 @@ API_URL="${API_URL%/}"
   echo "Expected approved Azure Container Apps HTTPS origin" >&2; exit 2;
 }
 
-VALID_ROW='{"customerID":"DEMO-0001","gender":"Female","SeniorCitizen":0,"Partner":"Yes","Dependents":"No","tenure":1,"PhoneService":"No","MultipleLines":"No phone service","InternetService":"DSL","OnlineSecurity":"No","OnlineBackup":"Yes","DeviceProtection":"No","TechSupport":"No","StreamingTV":"No","StreamingMovies":"No","Contract":"Month-to-month","PaperlessBilling":"Yes","PaymentMethod":"Electronic check","MonthlyCharges":29.85,"TotalCharges":29.85,"numAdminTickets":0,"numTechTickets":0}'
+VALID_ROW='{"customerID":"DEMO-0001","gender":"Female","SeniorCitizen":0,"Partner":"Yes","Dependents":"No","tenure":1,"PhoneService":"No","MultipleLines":"No phone service","InternetService":"DSL","OnlineSecurity":"No","OnlineBackup":"Yes","DeviceProtection":"No","TechSupport":"No","StreamingTV":"No","StreamingMovies":"No","Contract":"Month-to-month","PaperlessBilling":"Yes","PaymentMethod":"Electronic check","MonthlyCharges":29.85,"TotalCharges":29.85}'
 
 # Réveille l'API si elle est à 0 réplica (le premier appel peut être lent).
 curl -fsS --max-time 60 "$API_URL/health" > /dev/null && echo "API prête"
