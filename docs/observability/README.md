@@ -166,3 +166,7 @@ mémoire et vérifie exactement ce qui serait exporté :
 ### Contrôles hors cloud
 
 `bash tests/observability/test_guards.sh` utilise uniquement des doubles de commandes Azure CLI et curl. Aucun appel Azure réel. Le contrôle vérifie les autorisations, l'absence de création d'une seconde ressource de monitoring et les codes 422/200 attendus.
+
+## Integration boundary — 27 November
+
+The API instrumentation and its tests are now owned exclusively by #17. This R4 branch contains only the observability runbook, KQL, guarded scripts and their independent checks; it does not carry a second ONNX, API, ML workflow or root README. The synthetic alert request targets the 19-feature model 1.1.0; it does not prove Azure telemetry or alert delivery. R1 tests run in #17/#23, not in this R4-only branch. No live alert was triggered.
