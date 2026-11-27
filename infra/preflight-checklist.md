@@ -54,3 +54,7 @@ and any remaining service-created resource groups. No cleanup is executed here.
 Reference: docs/azure-access-guide.md in main; Microsoft Learn Flex Consumption
 deployment: https://learn.microsoft.com/en-us/azure/azure-functions/flex-consumption-how-to
 and Container Apps GHCR: https://learn.microsoft.com/en-us/azure/container-apps/github-actions
+
+### OIDC incident — 27 November
+
+The first approved workflow run (45966902708) failed with AADSTS700213 because the GitHub token uses immutable owner/repository IDs. The existing federation must be updated by the Azure owner to the exact subject in base.bicep. No new identity, broader roles or additional federation are required. Verify actual login after the update; keep deployment disabled.

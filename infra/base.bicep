@@ -83,7 +83,8 @@ resource federation 'Microsoft.ManagedIdentity/userAssignedIdentities/federatedI
   parent: deploymentIdentity
   properties: {
     issuer: 'https://token.actions.githubusercontent.com'
-    subject: 'repo:GemimaOndele/DSCC-Azure-Event-Driven-ML:environment:production'
+    // Match the immutable GitHub subject observed in OIDC run 45966902708.
+    subject: 'repo:GemimaOndele@128593071/DSCC-Azure-Event-Driven-ML@1462622773:environment:production'
     audiences: ['api://AzureADTokenExchange']
   }
 }
