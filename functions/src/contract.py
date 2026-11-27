@@ -1,4 +1,4 @@
-"""CSV contract validation, driven by the shared 21-feature JSON schema."""
+"""CSV contract validation, driven by the shared versioned JSON schema."""
 
 from __future__ import annotations
 
@@ -29,7 +29,8 @@ class CsvContractError(ValueError):
 
 def load_feature_contract() -> dict[str, Any]:
     contract = json.loads(FEATURES_PATH.read_text(encoding="utf-8-sig"))
-    if contract["feature_count"] != 21 or len(contract["features"]) != 21:  # pragma: no cover
+    count = contract["feature_count"]
+    if type(count) is not int or count <= 0 or len(contract["features"]) != count:  # pragma: no cover
         raise ValueError("Inconsistent feature contract")
     return contract
 
