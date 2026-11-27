@@ -15,12 +15,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
         with:
-          ref: 5886584331997d5b1b5fae7f6602c58d876f0221
+          ref: 846a697d70fb388cfb9f983bf3b2c14e0a019c2f
           path: .preview-api
           persist-credentials: false
       - uses: actions/checkout@v4
         with:
-          ref: 503280aa3a03ea74bcf33b913c5999de39a8d93f
+          ref: d4e51388cb6979261867fd728748ad7b0f43dbd6
           path: .preview-pipeline
           persist-credentials: false
       - name: Assemble pinned code without merging any branch
@@ -28,8 +28,10 @@ jobs:
           set -euo pipefail
           mkdir -p model
           cp -a .preview-api/api .
-          cp .preview-api/model/features.json .preview-api/model/model-1.0.0.onnx model/
+          cp .preview-api/model/features.json .preview-api/model/model-1.1.0.onnx model/
           cp -a .preview-pipeline/functions .
+          cmp model/features.json functions/contract/features.json
+          test "$(git hash-object model/model-1.1.0.onnx)" = 09ee933f16731e7218189d19d7c3ab98162de34e
           rm -rf .preview-api .preview-pipeline
       - uses: actions/setup-python@v5
         with:
