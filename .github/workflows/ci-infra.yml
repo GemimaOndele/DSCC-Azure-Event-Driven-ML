@@ -4,6 +4,7 @@ on:
     paths:
       - 'infra/**'
       - '.github/workflows/ci-infra.yml'
+      - '.github/workflows/azure-oidc-readonly.yml'
   workflow_dispatch:
 permissions:
   contents: read
@@ -13,6 +14,22 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - name: Validate read-only OIDC workflow
+        run: |
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
+          "$(go env GOPATH)/bin/actionlint" .github/workflows/ci-infra.yml .github/workflows/azure-oidc-readonly.yml
+      - name: Verify identical workflow and clean integration with pinned CI PR
+        run: |
+          set -euo pipefail
+          CI_HEAD=a15804423ee46f7ee680ebfe9e0b0c60638a933c
+          test "$(git hash-object .github/workflows/azure-oidc-readonly.yml)" = "$(git rev-parse "$CI_HEAD:.github/workflows/azure-oidc-readonly.yml")"
+          git merge-tree --write-tree --name-only --no-messages HEAD "$CI_HEAD"
       - name: Compile Bicep templates without Azure credentials
         run: |
           set -euo pipefail
