@@ -20,13 +20,14 @@ def payload() -> bytes:
     return FIXTURE.read_bytes()
 
 
-def test_feature_contract_is_the_shared_21_columns() -> None:
+def test_feature_contract_is_the_shared_19_features() -> None:
     contract = load_feature_contract()
-    assert contract["feature_count"] == 21
-    assert len(contract["features"]) == 21
-    assert len(required_columns()) == 22
+    assert contract["feature_count"] == 19
+    assert contract["model_version"] == "1.1.0"
+    assert len(contract["features"]) == 19
+    assert len(required_columns()) == 20
     assert required_columns()[0] == "customerID"
-    assert {"numAdminTickets", "numTechTickets"}.issubset(required_columns())
+    assert {"numAdminTickets", "numTechTickets"}.isdisjoint(required_columns())
     assert "Churn" not in required_columns()
 
 
@@ -58,7 +59,7 @@ def test_valid_csv_is_coerced_for_the_api() -> None:
     assert rows[0]["SeniorCitizen"] == 0
     assert rows[0]["MonthlyCharges"] == 29.85
     assert rows[0]["TotalCharges"] == 29.85
-    assert rows[1]["numAdminTickets"] == 2
+    assert rows[1]["TotalCharges"] == 1889.5
     assert set(rows[0]) == set(required_columns())
 
 
@@ -71,7 +72,7 @@ def test_blank_lines_are_ignored() -> None:
 
 
 def test_blank_total_charges_becomes_none() -> None:
-    text = payload().decode().replace("56.95,1889.5,2,0", "56.95,,2,0")
+    text = payload().decode().replace("56.95,1889.5", "56.95,")
     rows = parse_csv(text.encode(), settings=SETTINGS)
     assert rows[1]["TotalCharges"] is None
 
@@ -81,10 +82,10 @@ def test_blank_total_charges_becomes_none() -> None:
     [
         (lambda text: text.replace("customerID,", "id,"), "missing columns"),
         (lambda text: text.replace("customerID,", "customerID,extra,"), "unexpected columns"),
-        (lambda text: text.replace(",29.85,29.85,", ",abc,29.85,"), "not a valid number"),
+        (lambda text: text.replace(",29.85,29.85", ",abc,29.85"), "not a valid number"),
         (lambda text: text.replace(",1,No,No phone", ",999,No,No phone"), "outside"),
         (lambda text: text.replace(",Female,0,", ",Other,0,"), "unexpected category"),
-        (lambda text: text.replace(",0,1\n", ",NaN,1\n"), "not a valid number"),
+        (lambda text: text.replace(",53.85,108.15", ",53.85,NaN"), "non-finite number"),
     ],
 )
 def test_invalid_values_are_rejected(mutation, message: str) -> None:
@@ -119,3 +120,11 @@ def test_invalid_customer_id_rejected_locally_without_echo(bad_id):
 def test_customer_id_ascii_pattern_accepts_dot_underscore_hyphen():
     data = payload().decode().replace("7590-VHVEG", "id.A_b-1", 1).encode()
     assert parse_csv(data, settings=SETTINGS)[0]["customerID"] == "id.A_b-1"
+
+
+@pytest.mark.parametrize("retired", ["numAdminTickets", "numTechTickets"])
+def test_retired_ticket_columns_are_rejected(retired):
+    header, *rows = payload().decode().splitlines()
+    data = "\n".join([header + "," + retired, *(row + ",1" for row in rows)])
+    with pytest.raises(CsvContractError, match="unexpected columns"):
+        parse_csv(data.encode(), settings=SETTINGS)
