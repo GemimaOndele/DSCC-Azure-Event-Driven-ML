@@ -21,7 +21,7 @@ Schéma produit par `functions/src/service.py` (`recent`) :
 { "count": 8, "limit": 20, "results": [
   { "id": "...", "fileName": "batch_01.csv", "timestamp": "2026-11-24T09:00:00Z",
     "rows": 50, "atRisk": 13, "avgChurnProbability": 0.31,
-    "modelVersion": "1.0.0", "durationMs": 1840, "status": "ok" } ] }
+    "modelVersion": "1.1.0", "durationMs": 1840, "status": "ok" } ] }
 ```
 
 Affichage :
