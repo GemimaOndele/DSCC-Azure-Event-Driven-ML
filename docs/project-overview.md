@@ -84,4 +84,4 @@ Public repository, README and reproducible code, a PDF report **with screenshots
 
 ML/API (4), event-driven pipeline (4), persistence/dashboard (2), observability (3), CI/CD/security (3), cost/student restrictions (2), documentation/demo/defense (2) = **20 points** (plus optional bonuses only after core completion).
 
-_Last planning update: 26 November 2026. Consult the current PRs and evidence register before claiming acceptance. Dataset rights and final 19/21 decision remain pending._
+_Last planning update: 27 November 2026. R1/R4 selected the 19-feature model 1.1.0; cross-component review and dataset/artifact rights remain pending. Consult the latest PRs and Azure setup evidence before claiming acceptance._
