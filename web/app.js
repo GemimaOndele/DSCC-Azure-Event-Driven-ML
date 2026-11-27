@@ -68,7 +68,7 @@
       rows,
       atRisk,
       avgChurnProbability: Math.min(0.95, atRisk / rows + 0.04),
-      modelVersion: "1.0.0",
+      modelVersion: "1.1.0",
       durationMs: 600 + ((index * 211) % 1400),
       status: "ok",
     };
@@ -90,7 +90,7 @@
     // Moyenne pondérée par le nombre de clients de chaque fichier.
     const weighted = window.DSCC_DATA.weightedProbability(items);
     const durations = items.map((item) => item.durationMs).filter((d) => d !== null);
-    const versions = [...new Set(items.map((item) => item.modelVersion))];
+    const versions = window.DSCC_DATA.modelVersions(items);
 
     $("kpi-files").textContent = numberFmt.format(items.length);
     $("kpi-rows").textContent = numberFmt.format(rows);
