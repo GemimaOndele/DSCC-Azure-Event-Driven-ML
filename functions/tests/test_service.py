@@ -18,7 +18,7 @@ EVENT = {
     "blobName": "batch_01.csv",
 }
 BATCH_RESPONSE = {
-    "model_version": "1.0.0",
+    "model_version": "1.1.0",
     "latency_ms": 12.3,
     "predictions": [
         {"customerID": ["7590-VHVEG", "5575-GNVDE", "3668-QPYBK"][i], "prediction": "Yes", "label": 1,
@@ -30,7 +30,7 @@ BATCH_RESPONSE = {
         "atRisk": 3,
         "avgChurnProbability": 0.8,
         "threshold": 0.5,
-        "model_version": "1.0.0",
+        "model_version": "1.1.0",
     },
 }
 
@@ -104,7 +104,7 @@ def test_worker_writes_output_and_metadata() -> None:
     assert metadata["rows"] == 3
     assert metadata["atRisk"] == 3
     assert metadata["avgChurnProbability"] == 0.8
-    assert metadata["modelVersion"] == "1.0.0"
+    assert metadata["modelVersion"] == "1.1.0"
     assert metadata["status"] == "ok"
     assert metadata["durationMs"] >= 0
 
@@ -149,7 +149,7 @@ def test_recent_limits_and_cors_origin() -> None:
         results.upsert({"idempotencyKey": f"k{i}", "id": f"k{i}",
                         "fileName": f"b{i}.csv", "timestamp": f"2026-11-24T10:{i:02d}:00Z",
                         "rows": 3, "status": "ok", "atRisk": 1,
-                        "avgChurnProbability": 0.4, "modelVersion": "1.0.0",
+                        "avgChurnProbability": 0.4, "modelVersion": "1.1.0",
                         "durationMs": 12})
     payload, origin = recent(results=results, settings=SETTINGS,
                              request_origin="https://dashboard.example")
