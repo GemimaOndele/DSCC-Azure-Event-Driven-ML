@@ -13,6 +13,7 @@ on:
       - 'infra/trigger-alert.sh'
       - '.github/workflows/ci.yml'
       - '.github/workflows/deploy.yml'
+      - '.github/workflows/azure-oidc-readonly.yml'
   push:
     branches: [main]
   workflow_dispatch:
@@ -30,7 +31,7 @@ jobs:
       - name: Validate workflow syntax and expressions
         run: |
           go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
-          "$(go env GOPATH)/bin/actionlint" .github/workflows/ci.yml .github/workflows/deploy.yml
+          "$(go env GOPATH)/bin/actionlint" .github/workflows/ci.yml .github/workflows/deploy.yml .github/workflows/azure-oidc-readonly.yml
   api:
     runs-on: ubuntu-latest
     timeout-minutes: 15
