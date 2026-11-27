@@ -40,14 +40,19 @@ jobs:
                   raise RuntimeError("Invalid Git SHA")
               return value
           base = sha(api("git/ref/heads/main")["object"]["sha"])
-          expected = ["14","17","18","20","21","19","22","23","24","25"]
+          expected = ["24","14","17","18","20","21","19","22","23","25"]
           heads = []
+          merged = []
           for number in expected:
               pr = api(f"pulls/{number}")
-              if pr["state"] != "open" or pr["head"]["repo"]["full_name"] != repo or pr["base"]["ref"] != "main":
-                  raise RuntimeError(f"PR #{number} changed state, repository or base; review the release sequence")
+              if (pr["head"]["repo"] or {}).get("full_name") != repo or pr["base"]["ref"] != "main":
+                  raise RuntimeError(f"PR #{number} changed repository or base; review the release sequence")
+              if pr["state"] != "open":
+                  if not pr["merged"]:
+                      raise RuntimeError(f"PR #{number} closed without merge; review release sequence")
+                  merged.append(number)
               heads.append([number, sha(pr["head"]["sha"])])
-          Path("current-heads.json").write_text(json.dumps({"base":base,"heads":heads}, indent=2))
+          Path("current-heads.json").write_text(json.dumps({"base":base,"heads":heads,"already_merged":merged}, indent=2))
           print(Path("current-heads.json").read_text())
           PY
       - name: Run reviewed integration gate against the recorded snapshot
@@ -62,6 +67,10 @@ jobs:
           snapshot = json.loads(Path("current-heads.json").read_text())
           for sha in [snapshot["base"], *(entry[1] for entry in snapshot["heads"])]:
               subprocess.run(["git","cat-file","-e",sha+"^{commit}"],check=True)
+          for number, sha in snapshot["heads"]:
+              if number in snapshot["already_merged"]:
+                  subprocess.run(["git","merge-base","--is-ancestor",sha,snapshot["base"]],check=True)
+                  print(f"PR #{number}: existing merge ancestry verified")
           spec = importlib.util.spec_from_file_location("reviewed_gate", "tests/release/verify_conflict_gate.py")
           gate = importlib.util.module_from_spec(spec)
           spec.loader.exec_module(gate)
