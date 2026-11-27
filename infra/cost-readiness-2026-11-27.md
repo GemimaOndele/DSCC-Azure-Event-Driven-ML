@@ -28,9 +28,9 @@ one region, storage below 25 GB); do not silently create paid Cosmos.
 | Analytics Logs | 0.2 GB TOTAL during seven-day window | $2.76/GB above allowance; charge full volume in estimate | 0.5520 |
 | One 15-min log alert | One rule, provisionally full monthly price | $0.50/month system log meter | 0.5000 |
 | Cosmos DB | 400 shared RU/s, Free Tier confirmed at creation | Conditional free tier | 0.0000 |
-| **Priced subtotal** | | | **1.4179** |
+| **Priced subtotal** | | | **1.4169** |
 | Planning contingency | Event Grid, host/deployment operations, DNS/network, possible alert dimensions/email or unlisted meters | Allowance, not quote | 1.0000 |
-| **Preliminary planning total** | | | **2.4179** |
+| **Preliminary planning total** | | | **2.4169** |
 
 The Event Grid Basic free grant is 100,000 monthly operations; this planning
 scenario assumes small traffic well below it, but actual subscription eligibility
@@ -41,7 +41,7 @@ hard spending cap, and November/December usage must be added together.
 
 **Stress case:** the existing 0.2 GB/day Log Analytics cap can permit 1.4 GB
 over seven days, or USD 3.864 at the above marginal rate. Substituting this
-for USD 0.552 yields USD 4.7299 before reserve, USD 5.7299 with reserve.
+for USD 0.552 yields USD 4.7289 before reserve, USD 5.7289 with reserve.
 The target <USD 5 is plausible for the normal scenario but not guaranteed.
 Review daily ingestion, actual credit usage, alert billing and scaling; stop
 unneeded traffic promptly. Owner approval is required before provisioning
