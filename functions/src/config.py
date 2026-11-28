@@ -70,6 +70,6 @@ class Settings:
             api_read_timeout_s=_float_env(
                 "API_READ_TIMEOUT_SECONDS", DEFAULT_API_READ_TIMEOUT_S
             ),
-            recent_limit=_int_env("RECENT_LIMIT", DEFAULT_RECENT_LIMIT),
+            recent_limit=min(_int_env("RECENT_LIMIT", DEFAULT_RECENT_LIMIT), DEFAULT_RECENT_LIMIT),
             max_dequeue_count=_int_env("MAX_DEQUEUE_COUNT", DEFAULT_MAX_DEQUEUE_COUNT),
         )
