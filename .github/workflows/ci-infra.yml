@@ -61,3 +61,5 @@ jobs:
             echo "Unsafe: missing approval allowed deployment" >&2
             exit 1
           fi
+      - name: Test existing RBAC reuse without Azure
+        run: bash infra/test-bootstrap-rbac.sh

@@ -47,11 +47,26 @@ prefix="${DSCC_PREFIX:-dscc}"
 }
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [[ "$phase" == plan-base || "$phase" == apply-base ]]; then
+  # Discover an existing assignment without deleting or broadening access.
+  # Fail on ambiguous results or lookup errors rather than guessing a GUID.
+  rg_id="$(az group show -n "$DSCC_RG" --query id -o tsv)"
+  identity_json="$(az identity list -g "$DSCC_RG" -o json)"
+  principal_id="$(python3 -c 'import json,sys; rows=[x["principalId"] for x in json.load(sys.stdin) if x["name"]==sys.argv[1]]; assert len(rows)<=1, "Ambiguous managed identity"; print(rows[0] if rows else "")' "$prefix-github-mi" <<< "$identity_json")"
+  github_role_assignment_name=""
+  if [[ -n "$principal_id" ]]; then
+    roles_json="$(az role assignment list --scope "$rg_id" --fill-principal-name false -o json)"
+    github_role_assignment_name="$(python3 -c 'import json,sys,uuid; scope,principal=sys.argv[1:]; rows=[r["name"] for r in json.load(sys.stdin) if r.get("scope","").casefold()==scope.casefold() and r.get("principalId","").casefold()==principal.casefold() and r.get("roleDefinitionId","").lower().endswith("/b24988ac-6180-42a0-ab88-20f7382dd24c")]; assert len(rows)<=1, "Ambiguous existing Contributor assignments"; print(str(uuid.UUID(rows[0])) if rows else "")' "$rg_id" "$principal_id" <<< "$roles_json")"
+  fi
+  if [[ -n "$github_role_assignment_name" ]]; then
+    echo "Existing RG-scoped GitHub Contributor assignment will be reused."
+  else
+    echo "No matching existing assignment; using the template's deterministic name."
+  fi
   action=what-if
   [[ "$phase" != apply-base ]] || action=create
   az deployment group "$action" --resource-group "$DSCC_RG" --name dscc-base \
     --template-file "$ROOT/base.bicep" --parameters location="$DSCC_REGION" \
-      storageName="$DSCC_STORAGE" cosmosName="$DSCC_COSMOS" resultBackend="$DSCC_BACKEND" prefix="$prefix" \
+      storageName="$DSCC_STORAGE" cosmosName="$DSCC_COSMOS" resultBackend="$DSCC_BACKEND" prefix="$prefix" githubRoleAssignmentName="$github_role_assignment_name" \
     --only-show-errors
   exit
 fi
