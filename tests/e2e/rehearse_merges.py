@@ -13,13 +13,14 @@ HEADS = [
     ("26", "a3f5b23387777b0c18754ba4db2468bf20a140c4"),
     ("14", "131fd715f67a983169451be9492a9b8d1e2b74f1"),
     ("17", "846a697d70fb388cfb9f983bf3b2c14e0a019c2f"),
-    ("18", "e7d827263c9dc305656016568be9f8c99ed8f71a"),
+    ("18", "fd1e6fee2d5a8ee39e0e3732b48264085c2c33ec"),
     ("20", "65ff2d2ee0e15c41db43fe715be295abbf005229"),
     ("21", "d4e51388cb6979261867fd728748ad7b0f43dbd6"),
     ("19", "ccb406c63128ce151e76c67a9682c42a72c4f525"),
     ("22", os.environ.get("PR22_HEAD", "8f41a990bfbc34a390003ae2d6704dd6e9105285")),
     ("23", "478bc82a66dcaef82827ffe50567b8d43aa6d69b"),
     ("25", "ccafaf9ef35c51e12bc5c0e0f4ea6efe18c11968"),
+    ("27", "7c669a7badcca0af3b1f220e9c5b076b43a02f00"),
 ]
 HEADS = {"#" + number: sha for number, sha in HEADS}
 PAIRS = list(itertools.combinations(HEADS, 2))
