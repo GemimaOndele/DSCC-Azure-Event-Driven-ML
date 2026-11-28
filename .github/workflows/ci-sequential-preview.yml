@@ -1,0 +1,32 @@
+name: DSCC sequential integration preview
+on:
+  pull_request:
+    paths:
+      - 'tests/e2e/rehearse_sequence.py'
+      - '.github/workflows/ci-sequential-preview.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    env:
+      PR22_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Assemble and test disposable candidate
+        env:
+          DSCC_REPORT_DIR: ${{ runner.temp }}/dscc-evidence
+        run: python tests/e2e/rehearse_sequence.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sequential-preview
+          path: ${{ runner.temp }}/dscc-evidence/sequential-preview.json

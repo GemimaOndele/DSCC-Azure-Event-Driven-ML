@@ -1,0 +1,77 @@
+name: DSCC E2E preview (pinned components)
+on:
+  pull_request:
+    paths:
+      - 'tests/e2e/**'
+      - '.github/workflows/ci-e2e-preview.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-real-model:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: 846a697d70fb388cfb9f983bf3b2c14e0a019c2f
+          path: .preview-api
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: 7c669a7badcca0af3b1f220e9c5b076b43a02f00
+          path: .preview-pipeline
+          persist-credentials: false
+      - name: Assemble pinned code without merging any branch
+        run: |
+          set -euo pipefail
+          mkdir -p model
+          cp -a .preview-api/api .
+          cp .preview-api/model/features.json .preview-api/model/model-1.1.0.onnx model/
+          cp -a .preview-pipeline/functions .
+          cmp model/features.json functions/contract/features.json
+          test "$(git hash-object model/model-1.1.0.onnx)" = 09ee933f16731e7218189d19d7c3ab98162de34e
+          rm -rf .preview-api .preview-pipeline
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r api/requirements-dev.txt -r functions/requirements.txt
+      - run: python -m pytest tests/e2e/test_pipeline.py -q --junitxml=e2e-preview.xml
+      - name: Start isolated Azurite (no Azure account)
+        run: |
+          set -euo pipefail
+          docker run --rm -d --name dscc-azurite \
+            -p 127.0.0.1:10000:10000 -p 127.0.0.1:10001:10001 -p 127.0.0.1:10002:10002 \
+            -e AZURITE_ACCOUNTS=dsccemulator:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= \
+            mcr.microsoft.com/azure-storage/azurite@sha256:647c63a91102a9d8e8000aab803436e1fc85fbb285e7ce830a82ee5d6661cf37 \
+            azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --skipApiVersionCheck
+          python - <<'PY'
+          import socket
+          import time
+          deadline = time.monotonic() + 30
+          for port in (10000, 10001, 10002):
+              while True:
+                  try:
+                      with socket.create_connection(("127.0.0.1", port), timeout=1):
+                          break
+                  except OSError:
+                      if time.monotonic() >= deadline:
+                          raise
+                      time.sleep(0.5)
+          PY
+      - name: Exercise Azure SDK adapters against Azurite
+        env:
+          DSCC_RUN_AZURITE: '1'
+        run: python -m pytest tests/e2e/test_azurite.py -q --junitxml=azurite-preview.xml
+      - name: Stop disposable emulator
+        if: always()
+        run: docker rm -f dscc-azurite || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-preview
+          path: |
+            e2e-preview.xml
+            azurite-preview.xml
+          if-no-files-found: warn
