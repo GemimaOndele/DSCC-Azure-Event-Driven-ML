@@ -1,241 +1,81 @@
-# DSCC — Event-driven machine learning on Azure
-## Telecom customer attrition prediction
-**MSc 2 Artificial Intelligence | Distributed Systems and Cloud Computing in AI | ECE Paris**
+# DSCC — Apprentissage automatique événementiel sur Azure
+## Prédiction de l'attrition des clients télécoms
 
-**Team:** Gémima ONDELE POUROU, Yaye Aminata DIAGNE, Elias CREMNITER, Omar KRARTI  
-**Defense:** 2 December 2026  
-**Document status:** working report, 28 November 2026. Offline evidence verified; cloud acceptance and final review outstanding.
+**ECE Paris — MSc 2 Intelligence artificielle — Distributed Systems and Cloud Computing in AI**
+**Équipe :** Gémima ONDELE POUROU, Yaye Aminata DIAGNE, Elias CREMNITER, Omar KRARTI.
+**Soutenance :** 2 décembre 2026. **État :** brouillon consolidé du 28 novembre, à intégrer au Word collaboratif OneDrive. Ni PDF final ni recette cloud validée.
 
-## 1. Executive summary
+## 1. Résumé et objectifs
+Nous concevons une chaîne de traitement de fichiers CSV permettant de prédire le risque de départ des clients télécoms. L'architecture découple ingestion, orchestration, inférence, persistance, visualisation et supervision. Elle vise la reproductibilité, les reprises bornées, l'idempotence des résultats, la maîtrise des coûts et la traçabilité. Les tests hors cloud démontrent la faisabilité technique ; la recette sur Azure reste à réaliser.
 
-We designed a serverless, event-driven machine learning system to score telecom
-customer attrition risk from uploaded CSV batches. The architecture separates data
-ingestion, orchestration, model inference, persistent results, dashboard and
-observability. Our objectives are reproducibility, bounded retries, safe
-handling of duplicated events, controlled infrastructure costs and traceable delivery.
-
-The reference implementation includes an ONNX classification model served by FastAPI,
-a Python Azure Functions dispatcher and worker, a recent-results endpoint, and an
-observability/dashboard layer. On 27 November at 11:23–11:24 UTC the reviewed contract
-(#14), API (#17), event pipeline (#21) and integrated CI/CD (#23) were merged into
-protected main. Monitoring (#20) and the earlier report (#25) were also merged on 27 November. Training provenance (#18), dashboard (#19), QA (#22) and the recent-limit fix (#27) remain in review. No Azure application resources have
-been provisioned and cloud acceptance is not demonstrated.
-
-## 2. Scope and requirements
-
-- Accept valid CSV batches, reject malformed input without unnecessary retries.
-- Validate one shared model contract and produce one prediction per customer.
-- Persist results with an idempotency key derived from blob name and ETag.
-- Limit transient queue processing to five deliveries, then poison queue.
-- Expose the 20 most recent successful results to an automatically refreshing dashboard.
-- Build and test using GitHub Actions; publish versioned container artifact to GHCR
-  only after dataset rights and package publication are approved.
-- Deploy to an authorized student Azure subscription using managed identity and
-  federated OIDC; budget target at most USD 25, no VM/GPU/Kubernetes.
-- Demonstrate monitoring queries, an alert, actual costs and resource cleanup.
-
-## 3. Architecture
-
+## 2. Architecture et contrat
 ```mermaid
 flowchart TD
-    I[Blob Storage input CSV] --> E[Event Grid BlobCreated]
-    E --> D[Dispatcher Azure Functions]
-    D -->|valid| Q[Storage Queue inference-requests]
-    D -->|invalid| R[Rejected reason JSON]
-    Q --> W[Worker Azure Functions]
-    W -->|batch HTTP| A[FastAPI ONNX in Container Apps]
-    A -->|predictions and summary| W
-    W -->|immutable version output| O[Blob Storage output]
-    W --> C[Cosmos DB / optional Table Storage]
-    W -->|permanent error| R
-    Q -->|five failed deliveries| P[Poison Queue]
-    C --> V[GET /api/recent]
-    V --> B[Static dashboard]
-    A -. telemetry .-> M[Application Insights / Log Analytics]
-    W -. telemetry .-> M
-    M --> L[Alert and KQL]
+ I[Blob Storage : CSV] --> E[Event Grid]
+ E --> D[Dispatcher Azure Functions]
+ D -->|Valide| Q[Storage Queue]
+ D -->|Invalide| R[Rejet JSON]
+ Q --> W[Worker Azure Functions]
+ W --> A[FastAPI ONNX / Container Apps]
+ A --> W
+ W --> O[Blob : résultats immuables]
+ W --> C[Cosmos DB / repli Table Storage]
+ W -->|Erreur permanente| R
+ Q -->|Cinq échecs| P[Poison Queue]
+ C --> V[GET /api/recent]
+ V --> B[Dashboard]
+ A -.-> M[Application Insights / Log Analytics]
+ W -.-> M
+ M --> L[Alertes et KQL]
 ```
+Le contrat #14, fusionné, définit 19 variables prédictives, customerID comme identifiant et Churn comme cible exclue de l'inférence. Les événements peuvent être livrés plusieurs fois. L'ETag évite de traiter une nouvelle version au titre d'un événement ancien. Une sortie immuable par nom de blob et ETag et la récupération des métadonnées garantissent l'idempotence des résultats persistés, mais n'excluent pas des appels d'inférence concurrents. Le partitionnement Cosmos par /fileName et le repli Table Storage restent à éprouver dans le cloud.
 
-Storage events are delivered at least once. The dispatcher checks the declared input
-and conditionally downloads the event version. The worker validates the CSV, invokes
-the batch API with explicit timeouts, validates the response, and writes the canonical
-result. A versioned, create-only result blob allows retry recovery and avoids
-overwriting the output of another ETag. Concurrent duplicate deliveries can still
-call inference more than once; only durable output and metadata are idempotent.
-Cosmos point reads use /fileName as partition key. A fallback Table Storage path
-requires explicit deployment and performance validation.
+## 3. Données et modèle
+Régression logistique, split stratifié 80/20, graine 42, imputation médiane, mise à l'échelle et encodage one-hot. ONNX 1.1.0 : 4 variables numériques et 15 catégorielles. Les deux compteurs de tickets sont exclus car leur disponibilité avant le churn n'est pas établie ; l'ablation ne prouve pas une fuite.
 
-Contract #14 is merged with the 19-feature interface; versioned output naming,
-superseded-event handling and the shared schema are integrated with the API and
-pipeline. Data provenance and derivative-artifact publication rights remain
-unresolved and are explicit release gates.
-
-## 4. Data and model
-
-The current model is logistic regression trained with stratified 80/20 split,
-random seed 42, median imputation, scaling and one-hot encoding, exported to ONNX.
-The R1/R4 integration target (27 November) is ONNX 1.1.0, with 19 predictive variables: 15 categorical and 4 numeric. The two ticket counters are excluded and rejected as extra inputs.
-customerID identifies an input row; Churn is the target and is excluded from inference.
-
-Reported metrics from PR #18, not independently reproduced for this report:
-
-| Metric | Model 1.1.0 (19 features) | Historical 1.0.0 (21 features) | Majority baseline |
+| Indicateur rapporté | 1.1.0 (19 variables) | 1.0.0 historique (21) | Baseline majoritaire |
 |---|---:|---:|---:|
-| AUC | 0.8413 | 0.9273 | 0.5000 |
-| F1 | 0.6136 | 0.7328 | 0.0000 |
-| Accuracy | 0.7381 | 0.8318 | 0.7346 |
+| AUC | 0,8413 | 0,9273 | 0,5000 |
+| F1 | 0,6136 | 0,7328 | 0 |
+| Exactitude | 0,7381 | 0,8318 | 0,7346 |
 
-The availability of ticket counts before the prediction date is not demonstrated.
-R1/R4 selected 19 features because pre-churn availability of the two counters is undocumented; the ablation quantifies the trade-off but does not prove leakage. The held-out 1,409-row confusion matrix for 1.1.0 is [[747, 288], [81, 293]]. The reported maximum ONNX/scikit-learn probability difference is 1.495e-7. The coordinator and independent reviewers still need to confirm the release contract. Third-party dataset use, automated
-download, derivative artifact publication and redistribution permissions are not
-yet positively confirmed. Educational purpose alone does not establish a license.
-Do not present the metrics as production generalization or publish the artifact
-until the authorization issue is resolved.
+Matrice de confusion rapportée sur 1 409 lignes : [[747, 288], [81, 293]]. Écart maximal de probabilité ONNX/scikit-learn rapporté : 1,495e-7. Ces chiffres proviennent de #18 et ne constituent pas une nouvelle reproduction indépendante. Les quatre contrôles CI hors dataset sont réussis ; quatre tests dépendant du dataset sont désélectionnés. Omar rapporte huit tests locaux. La permission d'utiliser le classeur PwC/Forage exact et celle de publier l'artefact dérivé restent à établir ; le retrait des fichiers du tree courant ne règle pas l'historique. Garder DATASET_USE_APPROVED et MODEL_ARTIFACT_PUBLISH_APPROVED désactivés. Ne pas fusionner #18 tant que ce blocage n'est pas levé.
 
-## 5. ML API
+## 4. API et pipeline
+API : GET /health, GET /version, POST /predict, POST /predict/batch, GET /metrics. Validation stricte des entrées, rejet HTTP 422 permanent ; réseau, 429 et 5xx transitoires. Le dispatcher contrôle format, taille, colonnes et version ; le worker appelle l'API avec timeouts de 2 s (connexion) et 10 s (lecture). Le host configure maxDequeueCount=5. Les rejets n'exposent pas de valeurs brutes. Le pipeline stocke prédictions et agrégats, puis expose les résultats récents. #27 plafonne RECENT_LIMIT et la réponse /api/recent à 20 pour les configurations positives ; les limites inférieures sont conservées. Le correctif est testé séparément et non encore fusionné.
 
-Canonical routes: GET /health, GET /version, POST /predict,
-POST /predict/batch, GET /metrics. The batch API consumes {"rows":[...]} and returns
-predictions, summary, model_version and latency_ms. Strict validation rejects invalid
-features and non-finite numeric values. HTTP 422 is a permanent input error;
-transient network/429/5xx failures are retried by the worker.
-Evidence: #17, head 846a697, run 45961769605: 16 API tests, Ruff, Docker build and the <500 MB image gate. The GHCR workflow on #17 is manual and opt-in, and publishes only `preview-<commit-sha>`; no new publication followed that change. The historical branch publication run 45880950088 (SHA 6fb916d, tags 1.0.0 and sha-6fb916d19230cdd29fccffccdf3722704f1f8b25, digest sha256:7932660bde49aeeaffad67fd58f5609a80ab123b11b632d663a0f88adab3b3f8) remains branch proof only. It establishes neither final integrated release, artifact rights, package visibility nor Azure deployment.
+## 5. Infrastructure, collaboration et CI/CD
+Abonnement Azure for Students retenu : celui de la coordinatrice ; groupe rg-projet-g2cc en France Central. Préparation historique : budget 4 EUR/mois, alertes 20/50/80 %, identité managée fédérée, rôle Contributor limité au groupe pour le déploiement. L'OIDC en lecture seule a réussi (run 45966902708, tentative 2) ; #26 a corrigé le sujet de fédération. Aucun déploiement applicatif n'est attesté.
 
-## 6. Pipeline and distributed systems
+Cible : Storage LRS, Cosmos Free Tier si éligible (sinon repli explicite), Container Apps Consumption 0,25 vCPU/0,5 Gio, 0–2 réplicas ; Functions Flex Python 3.12 (512 Mio sous réserve de quota), Event Grid, Application Insights et Log Analytics (plafond 0,2 Go/jour). Refaire les vérifications régionales, quotas, Free Tier et what-if avant création. Les accès humains sont à configurer séparément via Entra et RBAC sur le seul groupe ; aucun partage de session. Voir docs/azure-access-guide.md.
 
-The Python Functions v2 app contains dispatcher, worker and recent. The message has
-blobName, etag, size and enqueuedAt. The host sets maxDequeueCount=5. The worker
-uses 2 s connect and 10 s read timeouts and checks response consistency before
-persistence. The output key is scoped to the blob version. Failed CSV values are
-not echoed in rejection messages. Malformed queue envelopes are rejected.
-Retry/poison behavior must be shown on an actual Azure Functions host.
+GitHub Actions : tests et construction Docker, publication GHCR et déploiement sous autorisation explicite. La publication historique 1.0.0 (run 45880950088) n'est pas une release intégrée ni une preuve de déploiement. Les protections de main et de l'environnement production sont distinctes. Ne pas activer les commutateurs de publication/déploiement sans autorisation.
 
-Verified evidence: PR #21 commit 192e4c04c11da9299d0f14f0ff894e7265ad5265,
-GitHub Actions run 45878414101, job 140111279553, 61 offline tests passed; after Elias's review, #21 at 503280a passed 70 tests and Ruff in run 45882123936, with the CSV customerID pattern aligned to the API.
-These tests use in-memory adapters and HTTP mocks; they do not prove real Azure
-SDK behavior or end-to-end cloud operation. Independent integration preview #22,
-run 45878841099, verified 2 tests passed with the real ONNX API and synthetic inputs,
-using pinned API 5388f1c and pipeline 192e4c0 without merging main. The refreshed preview at #22 886ee85 against API 69cf39c and pipeline 503280a again passed both tests (run 45882194925). The latest approved QA preview at #22 65c11e9 pinned API 5886584 and pipeline 503280a and passed 2 real ONNX plus 3 isolated Azurite SDK tests (run 45884397529), still without merging branches or touching Azure. On 27 November, #21 d4e5138 passed 72 tests and Ruff (45962557654); #22 8f41a99 pinned #17 846a697 and #21 d4e5138, verified the schema and ONNX blob 09ee933f, and passed 2 ONNX and 3 Azurite tests for 1.1.0 (45963915557). The previous preview is historical evidence.
+## 6. Dashboard et observabilité
+Le dashboard Chart.js consomme /api/recent toutes les 30 s, valide le schéma et conserve les données précédentes en cas d'erreur. Le mode simulé est identifié et activé par défaut si apiBaseUrl est vide. Affichage : fichiers, clients, risque, probabilité pondérée, durée et versions. Les métriques OpenTelemetry, scripts KQL et alertes de #20 sont fusionnés ; les gardes de commandes ont été testées avec des doubles, pas avec Azure. Aucune donnée individuelle dans les captures ou labels.
 
-## 7. Infrastructure, security and CI/CD
-
-Target: one resource group, one storage account, Cosmos Free Tier if available,
-Container Apps consumption (0.25 vCPU, 0.5 GiB, 0–2 replicas), Functions Flex
-Consumption Python 3.12 (512 MiB subject to validation), Event Grid, Application
-Insights and Log Analytics cap 0.2 GB/day. Use managed identity for Azure resource
-access; GitHub Actions uses UAMI federation with restricted RG scope and OIDC.
-No hard-coded secrets. GHCR authentication is separate from ARM OIDC; private
-registry pull permissions must be approved and configured.
-
-The Azure sharing guide #15 is merged. The coordinator confirms that both Gémima and Aminata have sufficient student credits, based on previously shared evidence; no new balance is asserted. Work evidence records the coordinator's selected subscription, France Central, RG rg-projet-g2cc, EUR 4/month budget with 20/50/80% alerts, UAMI, federation and Contributor scoped to the RG. Effective Flex quota, Container Apps CPU capacity, actual Cosmos Free Tier application and individual team permissions remain pending. Work reports the Free Tier option selectable, without creating an account. See #24 evidence addendum. The merged infrastructure PR #24 contains base.bicep, apps.bicep and a guarded bootstrap, validated by GitHub Actions run 45880668170 (both templates compiled, shell syntax and refusal without approval tested). No application infrastructure has been provisioned; the initial Azure RG and identity configuration are reported in the Work evidence. #24 78ac96d was approved by Elias for documentation/preflight, CI 45962535851 passed, and the PR was merged into protected main at e56f77c. The read-only OIDC workflow on main initially failed with AADSTS700213 because the GitHub immutable subject did not match the Azure federation. Work corrected the existing credential; the owner approved the retry. Attempt 2 of run 45966902708 succeeded on 27 November at 10:17 CET (Azure login, expected subscription, France Central RG verification and logout), independently verified in GitHub job logs. Evidence: https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/45966902708/attempts/2. PR #26 corrects the Bicep template to preserve the same subject; its offline CI passed (45970191053), Omar independently approved a3f5b233, and it was merged into main at c67bafc. No application deployment occurred. The proposed CI/CD checks the API,
-pipeline and authorized training; GHCR and Azure deployment are explicitly gated.
-Deployment must be manually approved, pin the commit image digest, validate both API and model versions with
-GET /version, then deploy the existing Flex Functions package. No resources are
-provisioned automatically by this draft.
-
-## 8. Dashboard and observability
-
-The static dashboard targets GET /api/recent, refreshes every 30 seconds, and
-shows file/customer counts, risk, mean probability, latency and model version.
-PR #19 now includes strict payload validation and 17 passing Node tests (45963960460). PR #20 adds OpenTelemetry metrics:
-inferred_rows, inference_latency_ms, inference_requests and inference_errors,
-plus KQL and email alert logic. The earlier R4 CI duplicated R1 tests. On 27 November, #20 65ff2d2 was stacked on #17 846a697 without rewriting history. Its nine-file R4 delta is independently verified by CI 45964577085; R1 code and model are inherited byte-for-byte, and R1 owns telemetry implementation/tests. Cloud telemetry evidence remains pending. The R4 alert script reuses existing R3 resources and requires explicit owner consent.
-No customer values should be written to metrics labels or screenshots.
-
-## 9. Testing and evidence
-
-| Evidence | Status at draft |
+## 7. Résultats et preuves
+| Périmètre | Résultat et lien |
 |---|---|
-| API PR #17 CI | 1.1.0: 16 tests, Ruff and Docker build (45961769605) |
-| Training PR #18 CI | 1.1.0: 4 offline checks and Ruff passed, 4 dataset-dependent tests deselected (45961524670); source/artifact rights outstanding |
-| Pipeline PR #21 CI | 1.1.0: 72 offline tests and Ruff passed (45962557654) |
-| Integrated real-ONNX pipeline | 1.1.0: 2 ONNX + 3 Azurite tests (45963915557); pinned API 846a697 and pipeline d4e5138; no Azure |
-| Local Azure SDK integration (Azurite) | 3 tests in 45981804373; Blob/Queue/Table, not Cosmos or Functions host |
-| Git pairwise integration rehearsal | Refreshed 12 pairs: 3 conflicts, 9 clean (45884397543), down from 5 conflicts |
-| Sequential integrated preview | 10 pinned PRs, 103 tests (15 API + 70 pipeline + 2 ONNX + 16 dashboard), Ruff and mocked R4 guards passed (45884397493) |
-| Full offline release gate | QA b5181e1 on main c67bafc: 55/55 pairs clean (45981804434), nine remaining PRs integrated temporarily and 107 tests passed (45981804366). Docker 100,599,122 bytes in separate dynamic gate 45964640260, attempt 3. No remote merge by the tests. |
-| Azure E2E under 60 s | Not performed |
-| Rejection and poison queue in Azure | Not performed |
-| Dashboard, KQL, fired alert and email | Not performed |
-| GHCR image digest and manual deployment/version | Branch image publication verified; final release and Azure deployment not performed |
-| Scale-to-zero | Not performed |
-| Cost Analysis and cleanup | Not performed |
+| API #17 | 16 tests, Ruff, Docker et taille <500 Mo : [45961769605](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/45961769605) |
+| ML #18 | 4 contrôles hors dataset, 4 désélectionnés : [45961524670](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/45961524670) |
+| Pipeline #21 | 72 tests, Ruff : [45962557654](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/45962557654) |
+| Aperçu intégré #22 | 107 tests (16 API, 72 pipeline, 2 ONNX, 17 Node), gardes simulées : [46140778592](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/46140778592) |
+| Répétition des fusions #22 | 55/55 paires propres : [46140778562](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/46140778562) |
+| ONNX/Azurite #22 | 2 + 3 tests : [46140778585](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/46140778585) |
+| Correctif #27 | 76 tests pipeline dont 4 nouveaux, Ruff : [46141028861](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/46141028861) |
+| CI #27 | Succès sur branche, étapes conditionnelles potentiellement ignorées : [46141028906](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/46141028906) |
+| CI historique de main fce70111 | Échec des gates fichiers training/dashboard/E2E : [45990705903](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/45990705903). Actualiser après les fusions ; aucun run plus récent sur main vérifié. |
 
-Evidence files should include UTC date, exact commit, environment, test ID,
-expected/observed result and owner, with secrets/personal data redacted.
+Les 76 tests ne s'ajoutent pas aux 107 : #27 n'est pas dans cet aperçu. Les tests Azurite concernent Blob/Queue/Table, non Cosmos, Event Grid ou le host Functions réel. Restent à prouver : E01–E11, CSV valide sous 60 s, rejet, cinq reprises et poison, idempotence, dashboard réel, KQL/alerte/e-mail, digest/version déployée, scale-to-zero, coûts et nettoyage.
 
-The QA branch also verifies the real Azure Storage SDK against isolated Azurite (Blob, Queue and Table): ETag conditional reads, Base64 queue payload, immutable concurrent writes, metadata recovery and sanitized rejection. Three tests passed in run 45883033290 after correcting the test fixture credential type. No actual Azure authentication, Cosmos DB, Event Grid or Functions host was exercised. The emulator uses a pinned image and a deliberately synthetic local key. The initial Git merge-tree rehearsal found five conflicting pairs; the later 1.1.0 gate resolved them, as recorded above. The rehearsals did not merge remote branches; the separate, approved #24 merge is recorded in section 7.
+## 8. Coûts
+Estimation historique France Central pour sept jours : 2,4169 USD, dont 1 USD de réserve ; scénario plafond logs 5,7289 USD. Ces chiffres ne sont pas un relevé de consommation. Le budget 4 EUR/mois est une alerte, pas un plafond bloquant ; cible interne <5 USD et plafond projet 25 USD. Free Tier Cosmos conditionnel ; confirmer les frais avant provisionnement. Voir infra/cost-readiness-2026-11-27.md. Joindre Cost Analysis daté, devise, écart réel/prévu et preuve de nettoyage après soutenance.
 
-## 10. Cost model and actual costs
+## 9. Organisation et risques
+R1 Elias : modèle/API ; R2 Gémima/Aminata : pipeline ; R3 Aminata/Gémima : Azure et CI/CD ; R4 Omar : dashboard, supervision et coûts. Gémima coordonne la livraison. Au checkpoint du 28 novembre, main fce70111 contient #14, #15, #17, #20, #21, #23, #24, #25 et #26 fusionnées. PR techniques ouvertes : #18 e7d8272, #19 ccb406c, #22 13f1b75, #27 7c669a7 ; #28 documentaire ouverte. Les revues du 28 novembre par Elias sont COMMENTED, pas APPROVED. Omar a notamment approuvé #18 au SHA e7d8272 ; cette approbation technique ne lève ni les droits non établis ni la demande de modifications antérieure. Chaque approbation est liée à un SHA. Les droits, les quotas, les revues humaines et la recette Azure constituent les risques principaux.
 
-Work reports a EUR 4 monthly budget with alerts at 20%, 50%, 80%; target under USD 5, project ceiling USD 25. Budgets are alerts, not hard spending caps. The France Central retail planning scenario in #24 estimates USD 2.4169 including USD 1 contingency for seven days, or USD 5.7289 if log ingestion reaches the daily cap. Actual spend, effective Free Tier and unlisted meters are not verified. See infra/cost-readiness-2026-11-27.md.
+## 10. Conclusion provisoire et pièces à compléter
+La faisabilité hors cloud est étayée. Le rapport final doit séparer résultats observés, hypothèses et éléments non réalisés. Insérer les captures Azure redigées (abonnement/région/quotas, IAM, déploiement, CSV, rejet/poison, dashboard, KQL/alerte, scale-to-zero, coûts), journal des heures réelles de chacun et preuves de nettoyage. Ne pas inventer d'heures ni de résultats. Le Word OneDrive partagé est le rapport de référence ; ce Markdown sert de source de contenu et de traçabilité. Répétition : 10 min + 5 min de questions.
 
-| Item | Planned configuration | Estimated cost | Actual cost |
-|---|---|---|---|
-| Blob Storage / transactions | LRS, small CSV and results | USD 0.1466 | Pending |
-| Storage Queue | LRS, bounded operations | USD 0.0445 | Pending |
-| Cosmos or Table | Free Tier if eligible / explicit fallback | USD 0 conditional on Free Tier | Pending |
-| Functions | Flex, low demo volume | USD 0.0654 | Pending |
-| Container Apps | Consumption, min 0 max 2 | USD 0.1084 | Pending |
-| Event Grid | Low event volume | Pending | Pending |
-| Log Analytics / alerts | 0.2 GB total normal scenario | USD 1.0520 | Pending |
-| Reserve | Event Grid and unlisted meters, not a quoted price | USD 1.0000 | Pending |
-| Total | Target under USD 5; ceiling USD 25 | USD 2.4169 planning estimate | Pending |
-
-Record Cost Analysis timestamp and currency, estimate vs actual, then explain
-variance. No claim of zero spend without subscription evidence.
-
-## 11. Project organization and risks
-
-R1 Elias: ML/model API; R2 Aminata and Gémima: event pipeline; R3 Aminata and
-Gémima: Azure/CI-CD; R4 Omar: dashboard, observability and costs. Gémima coordinates
-integration and delivery. GitHub protected main, independent PR review, evidence-based
-issue closure. Do not approve own PR. All team members should understand a second
-domain for Q&A. Main contains #15 (access guide), #24 (infrastructure and read-only OIDC workflow), and #26 (OIDC subject correction). At the 28 November checkpoint, four implementation PRs remain open: #18, #19, #22 and #27. Omar approved the current #14, #17, #18, #21 and #23 heads; earlier requested changes, final rights and integration acceptance are not thereby waived. #22 was corrected after Omar's review and awaits re-review. The earlier report PR #25 is merged; this is a refreshed working report.
-
-Priority risk register:
-- dataset rights and temporal feature validity — Elias + team;
-- contract consistency and versioned outputs — Aminata/Elias/Gémima;
-- regional Flex/CPU quotas, effective Free Tier and live cost — Aminata/Gémima (subscription and region selected);
-- cross-branch conflicts and missing integrated CI — Gémima;
-- dashboard validation, monitoring and alert evidence — Omar;
-- limited schedule — all members; avoid deferring integration to defense eve.
-
-## 12. Conclusion and future work
-
-The architecture and offline tests support the feasibility of an event-driven
-ML pipeline. The final conclusion must distinguish observed implementation and
-cloud acceptance. Future improvements include stricter distributed execution
-deduplication, scalable fallback queries, stronger input schema management and
-time-aware model validation. Complete this report only after verified deployment,
-acceptance, costs and final human approval.
-
-## Appendix — evidence links
-- Contract #14: https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/pull/14
-- Azure guide #15: https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/pull/15
-- API #17: https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/pull/17
-- Training #18: https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/pull/18
-- Dashboard #19: https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/pull/19
-- Observability #20: https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/pull/20
-- Pipeline #21: https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/pull/21
-- Pipeline CI: https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/45878414101
-- E2E preview #22: https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/pull/22
-- E2E CI: https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/45878841099
-- CI/CD #23: https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/pull/23
-- Azure preflight #24: https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/pull/24
-- Team board: https://github.com/users/GemimaOndele/projects/5
-
-## 28 November 2026 — delivery checkpoint (offline evidence)
-
-Repository snapshot: main `fce70111`. PRs #14, #15, #17, #20, #21, #23, #24, #25 and #26 are merged; #18 (`e7d8272`), #19 (`ccb406c`), #22 (`13f1b75`) and #27 (`7c669a7`) remain open at this checkpoint.
-
-| Evidence | Verified result | Run |
-|---|---|---|
-| #22 sequential preview | 107 tests (16 API, 72 pipeline, 2 ONNX, 17 dashboard); Ruff and mocked observability guards passed | [46140778592](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/46140778592) |
-| #22 pairwise rehearsal | 55/55 pairs clean; pinned snapshot; no remote merge | [46140778562](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/46140778562) |
-| #22 isolated storage and ONNX | 2 ONNX + 3 Azurite SDK tests passed | [46140778585](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/46140778585) |
-| #27 recent limit fix | 76 pipeline tests including four added cases, Ruff passed; separate from 107-test preview | [46141028861](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/46141028861) |
-| #27 integrated CI | Success on PR branch; component-dependent steps can skip; not a release | [46141028906](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/46141028906) |
-| main CI | Failure at required training, dashboard, E2E file gates; publication skipped | [45990705903](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/45990705903) |
-
-#27 caps the positive configured RECENT_LIMIT and /api/recent response at 20, preserving smaller positive limits. It must be independently reviewed and included in a refreshed combined integration gate. The 107-test preview does not include #27. No new Azure deployment, live acceptance, cost measurement or GHCR publication is established here. Dataset use and derivative artifact publication rights remain unresolved. Keep publication/deployment gated. Actual individual hours and Azure screenshots remain to be collected; do not infer them from CI duration. Native GitHub Projects fields were not independently accessible.
+Historique détaillé des preuves : [registre au 27 novembre](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/blob/fce70111aef1bc62a024c7a20d9913891f5727ef/docs/evidence-register.md). [Registre actualisé](evidence-register.md).
