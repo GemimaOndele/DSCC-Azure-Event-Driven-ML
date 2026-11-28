@@ -124,3 +124,18 @@ Omar reports eight local training tests for 1.1.0; the actual current training C
 | #25 report | this update | Draft until rights, captures, costs and cloud evidence are complete |
 
 No GHCR release, deployment flag activation, dataset download, Azure resource creation or cost was incurred by these merges.
+
+## 28 November 2026 — delivery checkpoint (offline evidence)
+
+Repository snapshot: main `fce70111`. PRs #14, #15, #17, #20, #21, #23, #24, #25 and #26 are merged; #18 (`e7d8272`), #19 (`ccb406c`), #22 (`13f1b75`) and #27 (`7c669a7`) remain open at this checkpoint.
+
+| Evidence | Verified result | Run |
+|---|---|---|
+| #22 sequential preview | 107 tests (16 API, 72 pipeline, 2 ONNX, 17 dashboard); Ruff and mocked observability guards passed | [46140778592](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/46140778592) |
+| #22 pairwise rehearsal | 55/55 pairs clean; pinned snapshot; no remote merge | [46140778562](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/46140778562) |
+| #22 isolated storage and ONNX | 2 ONNX + 3 Azurite SDK tests passed | [46140778585](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/46140778585) |
+| #27 recent limit fix | 76 pipeline tests including four added cases, Ruff passed; separate from 107-test preview | [46141028861](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/46141028861) |
+| #27 integrated CI | Success on PR branch; component-dependent steps can skip; not a release | [46141028906](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/46141028906) |
+| main CI | Failure at required training, dashboard, E2E file gates; publication skipped | [45990705903](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/45990705903) |
+
+#27 caps the positive configured RECENT_LIMIT and /api/recent response at 20, preserving smaller positive limits. It must be independently reviewed and included in a refreshed combined integration gate. The 107-test preview does not include #27. No new Azure deployment, live acceptance, cost measurement or GHCR publication is established here. Dataset use and derivative artifact publication rights remain unresolved. Keep publication/deployment gated. Actual individual hours and Azure screenshots remain to be collected; do not infer them from CI duration. Native GitHub Projects fields were not independently accessible.
