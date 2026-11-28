@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 import onnx
+import onnxruntime
 import pandas as pd
 import pytest
 
@@ -17,6 +18,7 @@ ONNX_PATH = MODEL_DIR / "model-1.1.0.onnx"
 EXPECTED_ONNX_GIT_SHA = "09ee933f16731e7218189d19d7c3ab98162de34e"
 
 sys.path.insert(0, str(MODEL_DIR))
+import benchmark_cpu  # noqa: E402
 import prepare_data  # noqa: E402
 from prepare_data import (  # noqa: E402
     EXPECTED_COLUMNS,
@@ -108,6 +110,20 @@ def test_onnx_artifact_is_the_shared_version() -> None:
     assert [output.name for output in graph.output] == ["label", "probabilities"]
     probabilities = graph.output[1].type.tensor_type.shape
     assert probabilities.dim[-1].dim_value == 2
+
+    # Offline latency guard for the < 1 s criterion in issue #4. It uses only
+    # synthetic rows from the shared contract: no workbook, HTTP or Azure.
+    contract = benchmark_cpu.load_contract()
+    session = onnxruntime.InferenceSession(str(ONNX_PATH), providers=["CPUExecutionProvider"])
+    assert [item.name for item in session.get_inputs()] == [
+        feature["name"] for feature in contract["features"]
+    ]
+    latency = benchmark_cpu.measure(
+        session, benchmark_cpu.synthetic_inputs(contract, 100), warmup=2, iterations=10
+    )
+    assert latency["rows"] == 100
+    assert latency["mean_ms"] < 1000
+    assert latency["p95_ms"] < 1000
 
 
 def test_test_split_is_the_held_out_evidence(retrained: Path) -> None:

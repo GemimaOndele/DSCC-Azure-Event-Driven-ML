@@ -107,6 +107,13 @@ d'alerte de #20 restent la mesure d'intégration ; ce benchmark apporte la
 preuve modèle reproductible demandée par l'issue #4. Aucun seuil d'alerte ni
 déploiement n'est revendiqué ici.
 
+Le critère est également gardé-fou automatisé dans
+`test_onnx_artifact_is_the_shared_version` (`model/tests/test_training.py`),
+donc exécuté par le job CI hors dataset : il vérifie l'ordre des 19 entrées de
+l'ONNX puis mesure 10 appels de 100 lignes synthétiques (2 échauffements) et
+échoue si la moyenne ou le p95 atteint 1 s. `benchmark_cpu.py` reste l'outil de
+mesure détaillée ; ce garde-fou ne remplace pas la latence HTTP/Azure.
+
 ## 6. Reproductibilité et preuves
 
 - `py -3.12 -m pytest model/tests -q` exécute 8 tests : conformité du classeur
