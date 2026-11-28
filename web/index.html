@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DSCC — Tableau de bord churn</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Chart.js épinglé + empreinte SRI : aucune dépendance non vérifiée. -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
+          integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4"
+          crossorigin="anonymous" defer></script>
+  <script src="config.js" defer></script>
+  <script src="data.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Attrition télécom — pipeline Azure</h1>
+      <p class="subtitle">20 dernières inférences servies par <code>GET /api/recent</code></p>
+    </div>
+    <div class="status" aria-live="polite">
+      <span id="source-badge" class="badge">—</span>
+      <span id="last-update">Jamais actualisé</span>
+      <span id="countdown" class="muted"></span>
+      <button id="refresh-now" type="button">Actualiser</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="error-banner" class="banner banner-error" role="alert" hidden></div>
+
+    <section class="kpis" aria-label="Indicateurs">
+      <article class="kpi"><h2>Fichiers traités</h2><p id="kpi-files">—</p></article>
+      <article class="kpi"><h2>Clients scorés</h2><p id="kpi-rows">—</p></article>
+      <article class="kpi"><h2>Clients à risque</h2><p id="kpi-risk">—</p><small id="kpi-risk-rate" class="muted"></small></article>
+      <article class="kpi"><h2>Probabilité moyenne</h2><p id="kpi-proba">—</p></article>
+      <article class="kpi"><h2>Durée moyenne / fichier</h2><p id="kpi-duration">—</p></article>
+      <article class="kpi"><h2>Version du modèle</h2><p id="kpi-model">—</p></article>
+    </section>
+
+    <section class="card">
+      <h2>Clients à risque par fichier</h2>
+      <div class="chart-box"><canvas id="risk-chart" aria-label="Graphique des clients à risque par fichier" role="img"></canvas></div>
+    </section>
+
+    <section class="card">
+      <h2>Dernières inférences</h2>
+      <p id="empty-state" class="muted" hidden>Aucune inférence pour l'instant : déposez un CSV dans <code>input/</code>.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Horodatage</th>
+              <th scope="col">Fichier</th>
+              <th scope="col" class="num">Clients</th>
+              <th scope="col" class="num">À risque</th>
+              <th scope="col" class="num">Proba. moyenne</th>
+              <th scope="col" class="num">Durée</th>
+              <th scope="col">Modèle</th>
+              <th scope="col">Statut</th>
+            </tr>
+          </thead>
+          <tbody id="results-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="muted">
+    Projet DSCC — ECE Paris 2026–2027. Actualisation automatique toutes les
+    <span id="refresh-seconds">30</span> s.
+  </footer>
+</body>
+</html>
