@@ -16,7 +16,7 @@ HEADS = [
     ("18", "e7d827263c9dc305656016568be9f8c99ed8f71a"),
     ("20", "65ff2d2ee0e15c41db43fe715be295abbf005229"),
     ("21", "d4e51388cb6979261867fd728748ad7b0f43dbd6"),
-    ("19", "c8528772930cd35e1099c43701672b90bd77a5c1"),
+    ("19", "ccb406c63128ce151e76c67a9682c42a72c4f525"),
     ("22", os.environ.get("PR22_HEAD", "8f41a990bfbc34a390003ae2d6704dd6e9105285")),
     ("23", "478bc82a66dcaef82827ffe50567b8d43aa6d69b"),
     ("25", "ccafaf9ef35c51e12bc5c0e0f4ea6efe18c11968"),
