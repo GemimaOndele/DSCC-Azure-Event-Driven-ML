@@ -108,14 +108,14 @@ Si l'invitation externe Entra, la visibilité du groupe ou IAM sont bloquées pa
 
 ## 8. Mise en œuvre pour les quatre membres — 28 novembre 2026
 
-Le groupe `rg-projet-g2cc` est déjà créé en France Central dans l'abonnement Azure for Students retenu par Gémima. Le budget, l'identité OIDC et le test de connexion en lecture seule ont été documentés. Les accès humains ci-dessous restent à vérifier et attribuer ; le rôle de l'identité managée ne donne pas de droits aux membres.
+Le groupe `rg-projet-g2cc` est déjà créé en France Central dans l'abonnement Azure for Students retenu par Gémima. Le budget, l'identité OIDC et le test de connexion en lecture seule ont été documentés. Les accès humains ci-dessous ont été attribués et relus le 28 novembre ; la connexion effective de chacun reste à vérifier ; le rôle de l'identité managée ne donne pas de droits aux membres.
 
-| Membre | Accès initial proposé (périmètre du seul groupe) | Complément éventuel |
+| Membre | Accès initial attribué (périmètre du seul groupe) | Complément éventuel |
 |---|---|---|
 | Gémima | Owner existant (à conserver, pas de nouveau rôle global) | Pilotage des droits et dépenses |
-| Aminata | Contributor après accord de la propriétaire | Rôles de données Blob/Queue ciblés si nécessaires |
+| Aminata | Contributor | Rôles de données Blob/Queue ciblés si nécessaires |
 | Elias | Reader | Rôle ciblé sur Container Apps ou données de test uniquement si nécessaire |
-| Omar | Reader + Monitoring Contributor si responsable des réglages/alertes | Accès aux logs et au conteneur statique $web, selon besoins réels |
+| Omar | Reader + Monitoring Contributor | Accès aux logs et au conteneur statique $web, selon besoins réels |
 
 Le rôle Contributor peut créer, modifier et supprimer des ressources et engendrer des coûts ; il ne donne pas le droit d'attribuer des rôles RBAC. Ne pas attribuer Owner, Contributor ou Billing Reader à l'échelle de l'abonnement à toute l'équipe. Commencer par les droits minimums et étendre uniquement si un test l'exige.
 
@@ -131,3 +131,7 @@ Le rôle Contributor peut créer, modifier et supprimer des ressources et engend
 Les actions de création, suppression, modification réseau, augmentation de capacité et déploiement restent coordonnées et approuvées par la propriétaire. Maintenir les commutateurs de déploiement/publication désactivés tant que les validations ne sont pas réunies. Les droits humains ne prouvent ni l'éligibilité Free Tier ni une recette réelle. Noter date, membre, rôle, scope et vérification de lecture dans le Word partagé sans publier les adresses de compte, identifiants ni secrets. Retirer les accès temporaires après la soutenance et le nettoyage autorisé.
 
 Sources : [Microsoft Learn — rôles externes](https://learn.microsoft.com/fr-fr/azure/role-based-access-control/role-assignments-external-users), [attribution de rôles](https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-portal), [rôles Azure Monitor](https://learn.microsoft.com/en-us/azure/azure-monitor/roles-permissions-security).
+
+
+### Résultat de la configuration — 28 novembre
+Les trois comptes ont été reconnus dans Entra. Les quatre attributions indiquées ci-dessus ont été créées puis relues avec succès par la propriétaire. Le lien du groupe a été généré pour partage privé. Captures 03–07 à joindre au Word collaboratif en masquant les identifiants. Il reste à obtenir la preuve de connexion individuelle. Aucun déploiement applicatif ni coût mesuré n'est attesté. Voir Issue #3.
