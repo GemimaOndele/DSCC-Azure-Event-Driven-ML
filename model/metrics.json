@@ -1,0 +1,64 @@
+{
+  "model_version": "1.1.0",
+  "random_seed": 42,
+  "test_size": 1409,
+  "decision_threshold": 0.5,
+  "features": [
+    "gender",
+    "SeniorCitizen",
+    "Partner",
+    "Dependents",
+    "tenure",
+    "PhoneService",
+    "MultipleLines",
+    "InternetService",
+    "OnlineSecurity",
+    "OnlineBackup",
+    "DeviceProtection",
+    "TechSupport",
+    "StreamingTV",
+    "StreamingMovies",
+    "Contract",
+    "PaperlessBilling",
+    "PaymentMethod",
+    "MonthlyCharges",
+    "TotalCharges"
+  ],
+  "model": {
+    "auc": 0.8412978893797307,
+    "f1": 0.6136125654450262,
+    "accuracy": 0.7381121362668559,
+    "confusion_matrix": [
+      [
+        747,
+        288
+      ],
+      [
+        81,
+        293
+      ]
+    ]
+  },
+  "naive_baseline_most_frequent": {
+    "auc": 0.5,
+    "f1": 0.0,
+    "accuracy": 0.7345635202271115,
+    "confusion_matrix": [
+      [
+        1035,
+        0
+      ],
+      [
+        374,
+        0
+      ]
+    ]
+  },
+  "dataset": {
+    "rows": 7043,
+    "features": 19,
+    "positive_class": "Yes",
+    "positive_rows": 1869
+  },
+  "onnx_max_probability_error": 1.4945780096864425e-07
+}
