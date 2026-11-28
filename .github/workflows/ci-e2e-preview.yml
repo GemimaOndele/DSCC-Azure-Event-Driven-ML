@@ -20,7 +20,7 @@ jobs:
           persist-credentials: false
       - uses: actions/checkout@v4
         with:
-          ref: d4e51388cb6979261867fd728748ad7b0f43dbd6
+          ref: 7c669a7badcca0af3b1f220e9c5b076b43a02f00
           path: .preview-pipeline
           persist-credentials: false
       - name: Assemble pinned code without merging any branch
