@@ -7,7 +7,7 @@ team approval pending. No claim of a completed Azure demo before evidence.
 | 0:00–0:40 | 1. Problem and goals — Gémima | Telecom attrition, event-driven batch scoring |
 | 0:40–1:40 | 2. Architecture — Gémima | Blob → Event Grid → queue → worker → ONNX → output/Cosmos → dashboard |
 | 1:40–3:10 | 3. Model & API — Elias | 19-input ONNX 1.1.0, AUC 0.8413/F1 0.6136, historical 21-feature ablation and rights gate, `/predict/batch`, 16 API tests, preview-only GHCR |
-| 3:10–4:40 | 4. Pipeline — Gémima | ETag, idempotent output, retries, rejection, 72 offline tests + 2 ONNX preview tests + 3 Azurite SDK tests |
+| 3:10–4:40 | 4. Pipeline — Gémima | ETag, idempotent output, retries, rejection, 72 pipeline tests in the 107-test preview; 76 tests on separate #27 fix; 2 ONNX + 3 Azurite tests |
 | 4:40–6:10 | 5. Azure and CI/CD — Aminata | Subscription, resource design, OIDC, GHCR digest, approved deployment |
 | 6:10–7:40 | 6. Monitoring & dashboard — Omar | Dashboard refresh, KQL metrics, email alert, actual cost |
 | 7:40–9:15 | 7. Demonstration / acceptance — team | Synthetic CSV, result, dashboard, telemetry, version; evidence only |
@@ -28,7 +28,7 @@ and reproducibility, with explicit validation and traceable CI evidence.
 - Show a pre-recorded invalid CSV rejection, bounded retry/poison result, KQL and
   alert evidence rather than consuming presentation time on asynchronous waits.
 - Show CI run, image digest, actual Cost Analysis and limits; redact identifiers.
-- If Azure unavailable: demonstrate offline real-ONNX pipeline (latest verified 1.1.0 preview run 45981804373:
+- If Azure unavailable: demonstrate offline real-ONNX pipeline (latest verified 1.1.0 preview run 46140778585:
   2 ONNX + 3 isolated Azurite tests) and clearly label cloud acceptance incomplete.
   Never use mock results or a branch-only GHCR publication as Azure proof.
 - Final slide: confirmed vs pending, limitations, cleanup after separate approval.
@@ -56,3 +56,7 @@ Run a timed 10-minute rehearsal; record actual evidence links and unresolved iss
 Historical 1.0.0 evidence for rehearsal: 103 tests passed on assembled disposable integration preview (run 45884397493), plus three Azurite SDK tests separately. Three conflicting files were resolved temporarily, not on remote branches. Dashboard 16 tests and R4 mocked command guards are included in the preview; Azure alert and real deployment remain pending.
 
 Current 1.1.0 component evidence (27 Nov): 16 API tests, 72 pipeline tests, 17 dashboard tests, 2 real ONNX + 3 Azurite tests and mocked R4 guards; QA b5181e1 passed 55 pairwise comparisons and nine temporary integrations, with 107 tests (45981804434, 45981804366). #24 and #26 merged (main c67bafc); real read-only OIDC succeeded (45966902708 attempt 2). Indicative USD 2.42 cost documented, but actual quota, provisioning, costs and Azure acceptance remain unverified.
+
+## 28 November update
+
+Use the latest #22 preview `13f1b75`: 107 tests, 55/55 merge pairs and 2 ONNX + 3 Azurite checks (runs 46140778592, 46140778562, 46140778585). The separate #27 recent-limit fix `7c669a7` passed 76 pipeline tests (46141028861); do not add these counts to the 107-test preview. Main CI remains incomplete pending integration. Do not claim real Azure deployment or measured cost. Present the historical OIDC read-only success separately. Four implementation PRs require independent review. Use the offline demonstration if Azure acceptance cannot be evidenced; actual screenshot and cost evidence remain placeholders.
