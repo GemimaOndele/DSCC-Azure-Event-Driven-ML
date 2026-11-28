@@ -16,14 +16,14 @@
 Notre projet consiste à automatiser la prédiction du risque d'attrition des clients télécoms. Dès qu'un CSV est déposé, une architecture événementielle déclenche une chaîne d'inférence ONNX. Nous avons privilégié le découplage, la fiabilité des résultats, la maîtrise des coûts et la traçabilité.
 
 ## Démonstration
-Préparer un CSV synthétique unique, relever UTC, vérifier /health et /version, observer sortie, métadonnées et dashboard. Montrer les preuves de rejet, poison, KQL, alerte, digest, coûts et scale-to-zero seulement si obtenues. En cas d'indisponibilité Azure, démontrer l'aperçu ONNX/Azurite et l'indiquer explicitement. Les captures mock ne constituent pas de preuve Azure.
+Suivre le [cahier de recette E01–E11](recette-azure.md) après les validations nécessaires. Préparer un CSV synthétique unique, relever UTC, vérifier /health et /version, observer sortie, métadonnées et dashboard. Montrer les preuves de rejet, poison, KQL, alerte, digest, coûts et scale-to-zero seulement si obtenues. En cas d'indisponibilité Azure, démontrer l'aperçu ONNX/Azurite et l'indiquer explicitement. Les captures mock ne constituent pas de preuve Azure.
 
 ## Preuves du 28 novembre
-- 107 tests intégrés et 55/55 paires propres sur le snapshot #22 (46140778592, 46140778562), 2 ONNX + 3 Azurite (46140778585).
-- #27 : 76 tests pipeline dans une exécution distincte (46141028861), non incluse dans les 107.
+- 111 tests intégrés et 66/66 paires propres sur le snapshot #22 (46147650653, 46147650574), 2 ONNX + 3 Azurite (46147650662).
+- #27 : 76 tests pipeline dans une exécution distincte (46141028861), également inclus dans les 111 du nouvel aperçu ; ne pas additionner.
 - 4 tests ML CI hors dataset ; 8 tests locaux rapportés par Omar. Droits non réglés.
-- OIDC lecture seule réussi (45966902708 tentative 2), pas de déploiement attesté.
-- Coût estimé 2,42 USD ; coût réel non mesuré.
+- OIDC lecture seule réussi (45966902708 tentative 2), quatre rôles humains attribués et relus ; what-if #29 corrigé : 20 Create, 1 Modify apparent, 2 NoChange. Pas de déploiement attesté.
+- Coût estimé 2,42 USD ; budget RG 4 EUR/mois, consommation rapportée avant déploiement 0 EUR ; coût final non mesuré.
 
 ## Questions-réponses
 - Pourquoi une file ? Découplage, absorption de charge et reprises.
