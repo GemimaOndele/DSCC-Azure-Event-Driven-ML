@@ -50,6 +50,7 @@ La seule garantie vérifiable ici est négative : ce dépôt ne construit pas ce
 - **La licence Apache-2.0 du dépôt IBM ne couvre pas le classeur PwC/Forage dérivé**, ni les deux colonnes ajoutées. Elle ne s'applique qu'aux 21 colonnes d'origine lorsqu'elles sont obtenues depuis le dépôt IBM officiel ; conserver alors l'attribution IBM. La mention Kaggle « Data files © Original Authors » ne constitue pas non plus une autorisation de republier le classeur modifié.
 - Le jeu ne contient aucune donnée personnelle réelle, aucun secret ni identifiant Azure.
 - L'empreinte du classeur source et celle du CSV IBM doivent être revérifiées avant toute mise à jour de `model/prepare_data.py`.
+- Un projet de message à l'enseignant puis, si nécessaire, au détenteur des droits est fourni dans [`DATASET_AUTHORIZATION_REQUEST.md`](DATASET_AUTHORIZATION_REQUEST.md). Il n'a pas été envoyé et ne constitue pas une autorisation.
 
 ## 5. Tests et preuves (environnement propre)
 
