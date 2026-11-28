@@ -4,7 +4,7 @@
 
 **Team:** Gémima ONDELE POUROU, Yaye Aminata DIAGNE, Elias CREMNITER, Omar KRARTI  
 **Defense:** 2 December 2026  
-**Document status:** working report, 27 November 2026. Evidence still being collected. Not the final PDF.
+**Document status:** working report, 28 November 2026. Offline evidence verified; cloud acceptance and final review outstanding.
 
 ## 1. Executive summary
 
@@ -18,8 +18,7 @@ The reference implementation includes an ONNX classification model served by Fas
 a Python Azure Functions dispatcher and worker, a recent-results endpoint, and an
 observability/dashboard layer. On 27 November at 11:23–11:24 UTC the reviewed contract
 (#14), API (#17), event pipeline (#21) and integrated CI/CD (#23) were merged into
-protected main. Training provenance (#18), monitoring (#20), dashboard (#19), QA
-(#22) and this report (#25) remain in review. No Azure application resources have
+protected main. Monitoring (#20) and the earlier report (#25) were also merged on 27 November. Training provenance (#18), dashboard (#19), QA (#22) and the recent-limit fix (#27) remain in review. No Azure application resources have
 been provisioned and cloud acceptance is not demonstrated.
 
 ## 2. Scope and requirements
@@ -192,7 +191,7 @@ R1 Elias: ML/model API; R2 Aminata and Gémima: event pipeline; R3 Aminata and
 Gémima: Azure/CI-CD; R4 Omar: dashboard, observability and costs. Gémima coordinates
 integration and delivery. GitHub protected main, independent PR review, evidence-based
 issue closure. Do not approve own PR. All team members should understand a second
-domain for Q&A. Main contains #15 (access guide), #24 (infrastructure and read-only OIDC workflow), and #26 (OIDC subject correction). Nine PRs remain open. Omar approved the current #14, #17, #18, #21 and #23 heads; earlier requested changes, final rights and integration acceptance are not thereby waived. #22 was corrected after Omar's review and awaits re-review. #25 is this working report.
+domain for Q&A. Main contains #15 (access guide), #24 (infrastructure and read-only OIDC workflow), and #26 (OIDC subject correction). At the 28 November checkpoint, four implementation PRs remain open: #18, #19, #22 and #27. Omar approved the current #14, #17, #18, #21 and #23 heads; earlier requested changes, final rights and integration acceptance are not thereby waived. #22 was corrected after Omar's review and awaits re-review. The earlier report PR #25 is merged; this is a refreshed working report.
 
 Priority risk register:
 - dataset rights and temporal feature validity — Elias + team;
@@ -225,3 +224,18 @@ acceptance, costs and final human approval.
 - CI/CD #23: https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/pull/23
 - Azure preflight #24: https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/pull/24
 - Team board: https://github.com/users/GemimaOndele/projects/5
+
+## 28 November 2026 — delivery checkpoint (offline evidence)
+
+Repository snapshot: main `fce70111`. PRs #14, #15, #17, #20, #21, #23, #24, #25 and #26 are merged; #18 (`e7d8272`), #19 (`ccb406c`), #22 (`13f1b75`) and #27 (`7c669a7`) remain open at this checkpoint.
+
+| Evidence | Verified result | Run |
+|---|---|---|
+| #22 sequential preview | 107 tests (16 API, 72 pipeline, 2 ONNX, 17 dashboard); Ruff and mocked observability guards passed | [46140778592](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/46140778592) |
+| #22 pairwise rehearsal | 55/55 pairs clean; pinned snapshot; no remote merge | [46140778562](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/46140778562) |
+| #22 isolated storage and ONNX | 2 ONNX + 3 Azurite SDK tests passed | [46140778585](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/46140778585) |
+| #27 recent limit fix | 76 pipeline tests including four added cases, Ruff passed; separate from 107-test preview | [46141028861](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/46141028861) |
+| #27 integrated CI | Success on PR branch; component-dependent steps can skip; not a release | [46141028906](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/46141028906) |
+| main CI | Failure at required training, dashboard, E2E file gates; publication skipped | [45990705903](https://github.com/GemimaOndele/DSCC-Azure-Event-Driven-ML/actions/runs/45990705903) |
+
+#27 caps the positive configured RECENT_LIMIT and /api/recent response at 20, preserving smaller positive limits. It must be independently reviewed and included in a refreshed combined integration gate. The 107-test preview does not include #27. No new Azure deployment, live acceptance, cost measurement or GHCR publication is established here. Dataset use and derivative artifact publication rights remain unresolved. Keep publication/deployment gated. Actual individual hours and Azure screenshots remain to be collected; do not infer them from CI duration. Native GitHub Projects fields were not independently accessible.
