@@ -14,7 +14,7 @@ from .api_client import (
     TransientInferenceError,
     validate_batch_response,
 )
-from .config import Settings
+from .config import DEFAULT_RECENT_LIMIT, Settings
 from .contract import CsvContractError, parse_csv, validate_blob_name, validate_size
 from .messages import InferenceRequest, MessageError, rejection_reason
 from .ports import BlobStore, QueueSender, ResultStore, StaleBlobVersionError
@@ -193,10 +193,11 @@ def recent(
     *, results: ResultStore, settings: Settings, request_origin: str | None
 ) -> tuple[dict[str, Any], str | None]:
     """Return the payload and the CORS origin to expose (or None)."""
-    items = results.recent(settings.recent_limit)
+    limit = min(settings.recent_limit, DEFAULT_RECENT_LIMIT)
+    items = results.recent(limit)
     payload = {
         "count": len(items),
-        "limit": settings.recent_limit,
+        "limit": limit,
         "results": items,
     }
     allowed = (

@@ -271,3 +271,23 @@ def test_dispatch_rejects_bad_id_before_queue(bad_id):
     assert outcome["status"] == "rejected" and not queue.messages
     assert "invalid customerID" in outcome["reason"]
     assert bad_id.encode() not in next(iter(blobs.containers["rejected"].values()))[0]
+
+
+@pytest.mark.parametrize(("configured", "expected"), [("1", 1), ("20", 20), ("25", 20)])
+def test_recent_limit_env_is_bounded(monkeypatch, configured, expected):
+    monkeypatch.setenv("RECENT_LIMIT", configured)
+    assert Settings.from_env().recent_limit == expected
+
+
+def test_recent_caps_explicit_settings_at_contract_limit():
+    results = InMemoryResultStore()
+    for i in range(25):
+        results.upsert({"idempotencyKey": f"k{i}", "id": f"k{i}",
+                        "fileName": f"b{i}.csv", "timestamp": f"2026-11-24T10:{i:02d}:00Z",
+                        "rows": 3, "status": "ok", "atRisk": 1,
+                        "avgChurnProbability": 0.4, "modelVersion": "1.1.0",
+                        "durationMs": 12})
+    payload, _ = recent(results=results, settings=Settings(recent_limit=25),
+                        request_origin=None)
+    assert payload["limit"] == 20
+    assert payload["count"] == len(payload["results"]) == 20
