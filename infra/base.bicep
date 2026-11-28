@@ -12,6 +12,8 @@ param cosmosName string
 @allowed(['cosmosFreeTier', 'table'])
 param resultBackend string = 'cosmosFreeTier'
 param prefix string = 'dscc'
+@description('Existing exact RG-scoped GitHub Contributor assignment name, or empty for a new assignment.')
+param githubRoleAssignmentName string = ''
 param tags object = {
   project: 'DSCC'
   purpose: 'academic-demo'
@@ -104,7 +106,7 @@ resource storageRoles 'Microsoft.Authorization/roleAssignments@2022-04-01' = [fo
   }
 }]
 resource githubRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(resourceGroup().id, deploymentIdentity.id, 'contributor')
+  name: empty(githubRoleAssignmentName) ? guid(resourceGroup().id, deploymentIdentity.id, 'contributor') : githubRoleAssignmentName
   properties: {
     principalId: deploymentIdentity.properties.principalId
     principalType: 'ServicePrincipal'
