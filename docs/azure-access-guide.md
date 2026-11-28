@@ -105,3 +105,29 @@ Si l'invitation externe Entra, la visibilité du groupe ou IAM sont bloquées pa
 - Microsoft Learn, [Azure CLI role assignment](https://learn.microsoft.com/en-us/cli/azure/role/assignment).
 - Microsoft Learn, [OIDC authentication from GitHub Actions](https://learn.microsoft.com/en-us/azure/developer/github/connect-from-azure-openid-connect).
 - Microsoft Learn, [Azure budgets](https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/tutorial-acm-create-budgets).
+
+## 8. Mise en œuvre pour les quatre membres — 28 novembre 2026
+
+Le groupe `rg-projet-g2cc` est déjà créé en France Central dans l'abonnement Azure for Students retenu par Gémima. Le budget, l'identité OIDC et le test de connexion en lecture seule ont été documentés. Les accès humains ci-dessous restent à vérifier et attribuer ; le rôle de l'identité managée ne donne pas de droits aux membres.
+
+| Membre | Accès initial proposé (périmètre du seul groupe) | Complément éventuel |
+|---|---|---|
+| Gémima | Owner existant (à conserver, pas de nouveau rôle global) | Pilotage des droits et dépenses |
+| Aminata | Contributor après accord de la propriétaire | Rôles de données Blob/Queue ciblés si nécessaires |
+| Elias | Reader | Rôle ciblé sur Container Apps ou données de test uniquement si nécessaire |
+| Omar | Reader + Monitoring Contributor si responsable des réglages/alertes | Accès aux logs et au conteneur statique $web, selon besoins réels |
+
+Le rôle Contributor peut créer, modifier et supprimer des ressources et engendrer des coûts ; il ne donne pas le droit d'attribuer des rôles RBAC. Ne pas attribuer Owner, Contributor ou Billing Reader à l'échelle de l'abonnement à toute l'équipe. Commencer par les droits minimums et étendre uniquement si un test l'exige.
+
+### Procédure depuis le portail (propriétaire)
+1. Ouvrir https://portal.azure.com ; choisir le bon annuaire et l'abonnement d'intégration.
+2. Ouvrir Groupes de ressources > rg-projet-g2cc > Contrôle d'accès (IAM) > Attributions de rôles. Vérifier les droits déjà existants pour éviter les doublons.
+3. Ajouter > Ajouter une attribution de rôle ; choisir le rôle, puis Membres > Utilisateur, groupe ou principal de service > Sélectionner des membres. Utiliser l'adresse exacte du compte Microsoft/Azure de chaque membre.
+4. Si le membre n'existe pas dans l'annuaire, l'inviter via Entra B2B si les politiques le permettent, puis lui attribuer le rôle dans le groupe. Il accepte l'invitation avec son propre compte. Si l'invitation est bloquée, noter l'erreur sans contourner la politique.
+5. Vérifier + attribuer ; le membre bascule sur l'annuaire propriétaire dans le portail et confirme la visibilité du groupe et son accès IAM. Vérifier les rôles de données séparément, sans lancer de ressources.
+6. Partager le lien du groupe en interne. Chaque membre ouvre son propre portail ou Cloud Shell ; les ressources sont communes mais les fichiers et sessions Cloud Shell ne sont pas automatiquement partagés.
+
+### Règles opérationnelles
+Les actions de création, suppression, modification réseau, augmentation de capacité et déploiement restent coordonnées et approuvées par la propriétaire. Maintenir les commutateurs de déploiement/publication désactivés tant que les validations ne sont pas réunies. Les droits humains ne prouvent ni l'éligibilité Free Tier ni une recette réelle. Noter date, membre, rôle, scope et vérification de lecture dans le Word partagé sans publier les adresses de compte, identifiants ni secrets. Retirer les accès temporaires après la soutenance et le nettoyage autorisé.
+
+Sources : [Microsoft Learn — rôles externes](https://learn.microsoft.com/fr-fr/azure/role-based-access-control/role-assignments-external-users), [attribution de rôles](https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-portal), [rôles Azure Monitor](https://learn.microsoft.com/en-us/azure/azure-monitor/roles-permissions-security).
