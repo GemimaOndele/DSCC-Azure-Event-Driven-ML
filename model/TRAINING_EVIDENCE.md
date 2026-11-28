@@ -80,7 +80,34 @@ maximal entre probabilités sklearn et ONNX : **1,49e-07** (`np.allclose`,
 le rapport doit le présenter comme une démonstration pédagogique, pas comme
 un résultat production.
 
-## 5. Reproductibilité et preuves
+## 5. Latence CPU (critère de l'issue #4)
+
+`model/benchmark_cpu.py` mesure l'exécution ONNX seule
+(`onnxruntime.CPUExecutionProvider`) sur des lignes synthétiques construites
+depuis `model/features.json` : aucun téléchargement du classeur, aucune donnée
+client, aucun artefact publié.
+
+```bash
+py -3.12 model/benchmark_cpu.py --rows 1 --iterations 50 --warmup 5
+py -3.12 model/benchmark_cpu.py --rows 100 --iterations 20 --warmup 5
+```
+
+Mesures locales du 28/11/2026 (Python 3.12.10, onnxruntime 1.20.1, Windows 11,
+Intel64, ONNX `1.1.0` blob `09ee933f16731e7218189d19d7c3ab98162de34e`) :
+
+| Lignes par appel | Appels chronométrés | Moyenne | p95 | Max | Critère < 1 s |
+|---:|---:|---:|---:|---:|---|
+| 1 | 50 | 0,065 ms | 0,070 ms | 0,093 ms | respecté |
+| 100 | 20 | 0,190 ms | 0,203 ms | 0,218 ms | respecté |
+
+Ces valeurs dépendent de la machine et couvrent **uniquement l'inférence CPU
+du modèle** : ni HTTP/validation Pydantic (#17), ni queue/Functions (#21), ni
+Azure. La latence `inference_latency_ms` exposée par l'API et les gardes
+d'alerte de #20 restent la mesure d'intégration ; ce benchmark apporte la
+preuve modèle reproductible demandée par l'issue #4. Aucun seuil d'alerte ni
+déploiement n'est revendiqué ici.
+
+## 6. Reproductibilité et preuves
 
 - `py -3.12 -m pytest model/tests -q` exécute 8 tests : conformité du classeur
   au contrat 19 features, valeurs de référence des métriques, validité ONNX +
@@ -106,7 +133,7 @@ un résultat production.
   non-redistribution, licence IBM Apache-2.0 limitée aux colonnes d'origine,
   droits du cas non établis, décision 19 features).
 
-## 6. État
+## 7. État
 
 Le modèle est **en PR, pas dans `main`** ; l'issue #4 reste ouverte jusqu'aux
 vérifications d'acceptation, à l'approbation GitHub et à la fusion. Le passage
